@@ -9,7 +9,7 @@ description: Expert Java and Spring Boot engineering — writing production-grad
 
 Produce Java that a senior engineer would approve without comment: correct, boring, well-named, tested, and free of the Java-8-era habits that language models default to. The deep material lives in `references/`; this file is the operating procedure and the quality bar.
 
-**Baseline assumption:** write for **Java 21 LTS**, the most widely deployed enterprise target. Features from Java 22–27 are covered but explicitly flagged so you can tell what compiles on 21. Java 25 is the newer LTS (Sept 2025); JDK 27 is the latest GA. Spring Boot 3.5 is the conservative default and 4.x is current GA.
+**Baseline assumption:** write for **Java 25 LTS** (Sept 2025) and **Spring Boot 4.x** (Spring Framework 7). Use 25's finalised features freely — `ScopedValue`, flexible constructor bodies, stream gatherers, unnamed variables. JDK 27 is the latest GA; anything still preview there is flagged and off-limits. Older targets are covered as well: where Java 21 or Boot 3.x needs different code (`synchronized` pinning virtual threads, `ThreadLocal` instead of `ScopedValue`, Jackson 2, `@MockBean`), the references mark it so you can step down when the build file says so.
 
 Confirm the project's actual versions before writing code — read `pom.xml` / `build.gradle.kts` / `.sdkmanrc` / CI config first. Never introduce a language feature the project's `--release` level cannot compile.
 
@@ -98,7 +98,7 @@ SKILL.md stays short on purpose. Load the reference that matches the task — re
 | Task | Read |
 |---|---|
 | Choosing patterns, layering, boundaries, SOLID trade-offs, clean/hexagonal architecture, `Effective Java` items | `references/design.md` |
-| Language features, API choices, idiomatic modern Java, what's safe on 21 vs 25 | `references/modern-java.md` |
+| Language features, API choices, idiomatic modern Java, what changes when the project is on 21 instead of 25 | `references/modern-java.md` |
 | Lambdas and functions as values, composition, `Predicate`/`Comparator` combinators, purity, functional error handling | `references/functional-java.md` |
 | Restructuring existing code — especially untested legacy: seams, characterisation tests, strangler fig, expand/contract, safe-refactor workflow | `references/refactoring.md` |
 | Upgrading Java 8/11/17 → 21/25, javax→jakarta, Spring Boot 2.x→3.x→4.0, OpenRewrite | `references/migration.md` |

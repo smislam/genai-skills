@@ -1,6 +1,6 @@
 # Spring Boot
 
-Read this before writing or restructuring Spring Boot code. Default target: **Spring Boot 3.5 on Java 21**; Boot 4.0 differences are marked. Check the project's actual version in `pom.xml`/`build.gradle.kts` first.
+Read this before writing or restructuring Spring Boot code. Default target: **Spring Boot 4.x on Java 25**. Where Boot 3.x needs different code, it is marked. Check the project's actual version in `pom.xml`/`build.gradle.kts` first.
 
 ## Contents
 - [Application structure](#application-structure)
@@ -22,7 +22,7 @@ Read this before writing or restructuring Spring Boot code. Default target: **Sp
 - [Actuator and health](#actuator-and-health)
 - [Testing](#testing)
 - [Packaging and containers](#packaging-and-containers)
-- [Boot 4.0 notes](#boot-40-notes)
+- [Boot 4 baseline, and differences from 3.x](#boot-4-baseline-and-differences-from-3x)
 - [Anti-patterns](#anti-patterns)
 
 ## Application structure
@@ -133,7 +133,7 @@ class InvoiceController {
 - **Return the right status**: 201 + `Location` for creation, 204 for a successful delete, 200 with a body otherwise. `ResponseEntity` only when you need to control status or headers; otherwise return the body type.
 - **Always paginate collection endpoints.** An unpaginated `findAll` is a latent outage.
 - Keep controllers free of business logic and of `@Transactional`.
-- For blocking controllers on Java 21+, set `spring.threads.virtual.enabled=true` rather than tuning Tomcat's thread pool (`concurrency.md`).
+- For blocking controllers, set `spring.threads.virtual.enabled=true` rather than tuning Tomcat's thread pool (`concurrency.md`).
 
 ## Validation
 
@@ -374,16 +374,16 @@ Covered in depth in `testing.md`. The Spring-specific summary: unit-test domain 
 - Wire `readiness` to `/actuator/health/readiness` and `liveness` to `/actuator/health/liveness`, and enable graceful shutdown (`server.shutdown=graceful`) so in-flight requests finish during a rolling deploy.
 - Use CDS/AOT cache for startup time if it matters; GraalVM native image only if you have measured that you need sub-100ms starts and accepted the build-time and reflection-configuration cost (`performance.md`).
 
-## Boot 4.0 notes
+## Boot 4 baseline, and differences from 3.x
 
-Boot 4.x (on Spring Framework 7) is a major upgrade whose breaking changes are mostly *structural* rather than language-level. The headline surprise: **the minimum Java version did not change — 4.0 still requires Java 17**, same as the 3.x line. So do not assume a 4.x project is on Java 21; check the build file.
+Boot 4.x (on Spring Framework 7) is the default here. Its differences from 3.x are mostly *structural* rather than language-level. One thing that surprises people: **the minimum Java version did not change — 4.0 still requires Java 17**, same as the 3.x line. So do not assume a 4.x project is on Java 25, or even 21; check the build file.
 
-The changes most likely to affect code you write:
+Write new code the Boot 4 way. On a 3.x project, these are the places the code differs:
 
 - **Jar and package reorganisation.** Boot now ships as many smaller modules under dedicated `org.springframework.boot.<module>` packages, with technology-specific starters replacing some broad ones. This changes imports and dependency coordinates across the board — it is the bulk of the migration diff.
-- **Jackson 3.** The group id moves from `com.fasterxml.jackson` to `tools.jackson`, with class renames. Jackson 2 support remains only in deprecated form. Any custom serializer, module, or `ObjectMapper` configuration needs attention.
-- **JSpecify nullability annotations** replace `org.springframework.lang.@Nullable`/`@NonNull` throughout the framework. Combined with a null checker, this surfaces warnings in previously quiet code — usually real latent bugs.
-- **`@MockBean` and `@SpyBean` are removed.** Use `@MockitoBean` / `@MockitoSpyBean` (available from Boot 3.4, so you can make this change before upgrading).
+- **Jackson 3.** The group id moves from `com.fasterxml.jackson` to `tools.jackson`, with class renames. Jackson 2 support remains only in deprecated form. Write custom serializers, modules, and mapper configuration against Jackson 3; on 3.x, use the `com.fasterxml.jackson` equivalents.
+- **JSpecify nullability annotations** replace `org.springframework.lang.@Nullable`/`@NonNull` throughout the framework. Use `org.jspecify.annotations` in your own code too. Combined with a null checker, this surfaces warnings in previously quiet code — usually real latent bugs.
+- **`@MockBean` and `@SpyBean` are removed.** Use `@MockitoBean` / `@MockitoSpyBean` (also available from Boot 3.4, so prefer them there too).
 - **Undertow support is gone** — Tomcat, Jetty, or Reactor Netty only. Spock test integration and some Spring Session auto-configurations were also removed.
 - **Config property renames**, including `spring.dao.exceptiontranslation.enabled` → `spring.persistence.exceptiontranslation.enabled` and `management.tracing.enabled` → `management.tracing.export.enabled`.
 - **New capabilities worth using:** auto-configured HTTP service clients for annotated interfaces, API versioning for MVC/WebFlux (`spring.mvc.apiversion.*`), an OpenTelemetry starter, and `JmsClient`.

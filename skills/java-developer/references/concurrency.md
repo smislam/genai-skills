@@ -74,7 +74,7 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 
 ### The pitfalls that still bite
 
-- **Pinning.** A virtual thread that cannot unmount blocks its carrier. Through Java 21–23, a `synchronized` block held across a blocking call pinned the carrier; **JEP 491 (Java 24) fixed `synchronized` pinning**. Two consequences: on **Java 21 LTS, replace `synchronized` with `ReentrantLock` around blocking I/O** — this is the single most important virtual-thread gotcha on the current LTS; and native frames (JNI, some native-backed calls) still pin on every version. Diagnose with `-Djdk.tracePinnedThreads=full` on 21.
+- **Pinning.** A virtual thread that cannot unmount blocks its carrier. Through Java 21–23, a `synchronized` block held across a blocking call pinned the carrier; **JEP 491 (Java 24) fixed `synchronized` pinning**. Two consequences: on the **Java 25** baseline, `synchronized` around blocking I/O no longer pins, so you do not need to rewrite it for virtual threads; but if the project is **on Java 21, replace `synchronized` with `ReentrantLock` around blocking I/O** — the single most important virtual-thread gotcha there. Native frames (JNI, some native-backed calls) still pin on every version. Diagnose with the `jdk.VirtualThreadPinned` JFR event (or `-Djdk.tracePinnedThreads=full` on 21).
 - **Do not stop at "pinning" when the lock itself is the bottleneck.** A `synchronized` *instance method* on a singleton bean serialises on one monitor, so true concurrency through it is **1**, application-wide — queueing starts at the second concurrent request, regardless of how many carriers exist. Pinning compounds that but is not the whole story, and prescribing `ReentrantLock` while keeping one global lock around a network call fixes the carrier starvation and leaves the serialisation. Diagnose the lock scope first: what is actually being protected, and does it need to be held across the I/O at all? Usually the answer is a `ConcurrentHashMap` or a cache that needs no outer lock.
 - **Enabling virtual threads removes backpressure you were relying on without knowing it.** A bounded Tomcat worker pool silently capped how many requests could pile onto a contended lock, a slow dependency, or an unbounded queue. Switch to virtual threads and that cap disappears, so latent contention that was invisible at 200 concurrent workers surfaces immediately at 20,000. A latency cliff right after enabling virtual threads is usually a pre-existing bottleneck being exposed, not a new one being created — look for the narrowest shared resource on the path and give it an explicit bound.
 - **`ThreadLocal` becomes expensive at scale.** Fine for a few hundred platform threads; a million virtual threads each holding a cached buffer is a heap problem. Prefer `ScopedValue`. Also note thread-local-backed caches and pools (e.g. some `SimpleDateFormat` or buffer caches) lose their point entirely.
@@ -88,13 +88,13 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 spring.threads.virtual.enabled=true
 ```
 
-That switches the web server's request handling, `@Async`, and scheduled tasks to virtual threads. Before enabling, audit for `synchronized`-around-I/O (on Java 21), `ThreadLocal`-heavy libraries, and thread-pool-based rate limiting that you were implicitly relying on for backpressure.
+That switches the web server's request handling, `@Async`, and scheduled tasks to virtual threads. Before enabling, audit for `ThreadLocal`-heavy libraries, `synchronized`-around-I/O (only if on Java 21–23), and thread-pool-based rate limiting that you were implicitly relying on for backpressure.
 
 ## Structured concurrency
 
 The principle: if a task splits into subtasks, all subtasks must complete or be cancelled before the parent returns. This makes concurrent code behave like a single unit of work — errors propagate, cancellation propagates, and nothing leaks.
 
-Status: still a **preview API** through Java 25 (JEP 505), and the API shape changed across versions — in Java 25 it is `StructuredTaskScope.open(...)` with joiners, not the earlier `new StructuredTaskScope.ShutdownOnFailure()`. Because of that churn, **do not use it in production code on Java 21** unless the team has accepted `--enable-preview`. Use the virtual-thread executor pattern above, which is final API and gives you most of the benefit.
+Status: still a **preview API** through Java 25 (JEP 505), and the API shape changed across versions — in Java 25 it is `StructuredTaskScope.open(...)` with joiners, not the earlier `new StructuredTaskScope.ShutdownOnFailure()`. Because of that churn, **do not use it in production code** on any version unless the team has accepted `--enable-preview`. Use the virtual-thread executor pattern above, which is final API and gives you most of the benefit.
 
 ```java
 // Java 25 preview shape — fail-fast fan-out, both subtasks cancelled if either fails.
@@ -118,7 +118,7 @@ private static final ScopedValue<TenantId> TENANT = ScopedValue.newInstance();
 ScopedValue.where(TENANT, tenantId).run(() -> handleRequest(req));   // visible to callees, then gone
 ```
 
-On Java 21, `ThreadLocal` remains the practical choice — but always clear it in a `finally`, and be aware that MDC/security-context propagation across threads needs explicit handling (`TaskDecorator` in Spring, `DelegatingSecurityContextExecutor`, Micrometer's `ContextSnapshot`).
+On the Java 25 baseline, use `ScopedValue` for new request-scoped context. On Java 21, `ThreadLocal` remains the practical choice — but always clear it in a `finally`. Either way, be aware that MDC/security-context propagation across threads needs explicit handling (`TaskDecorator` in Spring, `DelegatingSecurityContextExecutor`, Micrometer's `ContextSnapshot`).
 
 ## Platform thread pools: sizing and shutdown
 
@@ -165,7 +165,7 @@ CompletableFuture.allOf(a, b, c).join();                          // then read e
 | Need | Use |
 |---|---|
 | Mutual exclusion, short non-blocking section | `synchronized` |
-| Mutual exclusion with timeout, tryLock, fairness, or across blocking I/O on Java 21 | `ReentrantLock` |
+| Mutual exclusion with timeout, tryLock, or fairness — or across blocking I/O if on Java 21 | `ReentrantLock` |
 | Many readers, rare writers, contention measured | `ReadWriteLock` / `StampedLock` (optimistic reads; not reentrant) |
 | Limit concurrent access to a scarce resource | `Semaphore` |
 | Wait for N events to finish | `CountDownLatch` (one-shot) / `Phaser` (reusable) |
@@ -286,7 +286,7 @@ Scaling concurrency without limiting it moves the failure instead of preventing 
 | `this` escaping in constructor | Half-built object observed | Factory method; start threads after construction |
 | Unbounded queue | OOM or latency climbing without limit | Bounded queue + rejection policy |
 | Blocking the common pool | Unrelated parallel streams stall | Explicit executor |
-| Pinned carrier (Java 21) | Virtual-thread throughput collapses | `ReentrantLock` instead of `synchronized` around I/O |
+| Pinned carrier (Java 21–23, or native frames on any version) | Virtual-thread throughput collapses | JDK 24+; on 21, `ReentrantLock` instead of `synchronized` around I/O |
 | Swallowed `InterruptedException` | Shutdown hangs; cancel does nothing | Restore flag or propagate |
 | `ThreadLocal` leak | Classloader/memory leak in app servers | Clear in `finally`; prefer `ScopedValue` |
 | Non-reentrant assumption | Self-deadlock with `StampedLock`/`ReadWriteLock` | Know the reentrancy of what you use |

@@ -60,7 +60,7 @@ ArchUnit deserves special mention because it is the only one that enforces *your
 ## Compiler settings
 
 ```xml
-<release>21</release>                     <!-- not source/target: release also checks the API surface -->
+<release>25</release>                     <!-- not source/target: release also checks the API surface -->
 <compilerArgs>
   <arg>-Xlint:all,-serial,-processing</arg>
   <arg>-Werror</arg>                      <!-- warnings are bugs you have not met yet -->
@@ -134,7 +134,7 @@ options.errorprone {
 
 Finally, introduce NullAway **package by package** on an existing codebase. `NullAway:AnnotatedPackages` scoped to one package lets you convert gradually instead of facing every null at once.
 
-Spring Framework 7 and Boot 4 adopt **JSpecify** annotations, which align with this tooling — if you are on that baseline, use `org.jspecify.annotations.Nullable` for consistency.
+Spring Framework 7 and Boot 4 adopt **JSpecify** annotations, which align with this tooling — on the default Boot 4 baseline, use `org.jspecify.annotations.Nullable` for consistency.
 
 ## Test layout and speed
 

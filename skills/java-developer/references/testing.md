@@ -227,7 +227,7 @@ class InvoiceControllerTest {
 }
 ```
 
-This is where you test status codes, validation messages, JSON shape, and error mapping — the wire contract. (On older Spring Boot versions, use `MockMvc` with `mockMvc.perform(...)` and `@MockBean`; `MockMvcTester` and `@MockitoBean` are the newer equivalents.)
+This is where you test status codes, validation messages, JSON shape, and error mapping — the wire contract. (`MockMvcTester` and `@MockitoBean` are the current API; Boot 4 removed `@MockBean`. On Boot 3.3 or earlier, use `MockMvc` with `mockMvc.perform(...)` and `@MockBean`. Boot 4 also splits test slices into technology-specific modules, so check that the matching test starter is on the classpath.)
 
 **`@DataJpaTest`** — repositories, entity mappings, and queries against a real database via Testcontainers. This is where `@Query` typos, missing cascades, and N+1 problems surface. Point it at the real engine, not H2: H2 accepts SQL Postgres rejects and vice versa, so an H2-green suite proves little.
 
@@ -296,7 +296,7 @@ class ArchitectureTest {
     static final ArchRule domainIsFrameworkFree = noClasses()
         .that().resideInAPackage("..domain..")
         .should().dependOnClassesThat().resideInAnyPackage(
-            "org.springframework..", "jakarta.persistence..", "com.fasterxml.jackson..");
+            "org.springframework..", "jakarta.persistence..", "tools.jackson..", "com.fasterxml.jackson..");
 
     @ArchTest
     static final ArchRule layersRespected = layeredArchitecture().consideringOnlyDependenciesInLayers()

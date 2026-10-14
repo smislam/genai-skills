@@ -245,7 +245,7 @@ Vertical scaling buys time; horizontal scaling needs the application to cooperat
 | Blocking the common ForkJoinPool | Stalls all parallel streams | Explicit executor |
 | Oversized connection pool | Context switching and contention beat the gain | `(cores × 2) + spindles`, then load-test |
 | JVM flags copied from a blog | Fights a self-tuning collector | Collector + heap size; measure |
-| `synchronized` around I/O on JDK 21 | Pins virtual-thread carriers | `ReentrantLock`, or JDK 24+ |
+| `synchronized` around I/O on JDK 21–23 | Pins virtual-thread carriers | JDK 24+ (the 25 baseline is unaffected); on 21, `ReentrantLock` |
 | Serializing huge payloads | CPU and bandwidth on fields nobody reads | Shape the response; paginate; compress |
 
 ## What to measure in production

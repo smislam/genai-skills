@@ -1,6 +1,6 @@
 # Modern Java: language and API
 
-Read this when choosing language features or standard-library APIs. The default target is **Java 21 LTS**; everything newer is marked so you can tell what will compile.
+Read this when choosing language features or standard-library APIs. The default target is **Java 25 LTS**. Features finalised after 21 are marked with their version, so you can tell what to avoid if a project is still on 21.
 
 Verify the project's actual level before using anything here — `maven.compiler.release`, `<java.version>`, or `languageVersion` in the Gradle toolchain. A feature that does not compile is worse than an old idiom.
 
@@ -19,14 +19,14 @@ Verify the project's actual level before using anything here — `maven.compiler
 - [Equality, hashing, comparison](#equality-hashing-comparison)
 - [Files and I/O](#files-and-io)
 - [HTTP client](#http-client)
-- [Beyond 21: what is new and what is still preview](#beyond-21-what-is-new-and-what-is-still-preview)
+- [Java 22–25: what the baseline adds over 21, and what is still preview](#java-2225-what-the-baseline-adds-over-21-and-what-is-still-preview)
 - [Logging](#logging)
 - [Modules](#modules)
 - [Idiom upgrade table](#idiom-upgrade-table)
 
 ## Availability at a glance
 
-LTS versions are **8, 11, 17, 21, 25**. JDK 17's premier support window closed in late 2026, which makes 21 (or 25) the realistic floor for new work. The latest GA release line is JDK 27.
+LTS versions are **8, 11, 17, 21, 25**. **25 is the default for new work.** 21 is the floor for existing code you maintain: JDK 17's premier support window closed in late 2026. The latest GA release line is JDK 27.
 
 | Feature | Final in | Notes |
 |---|---|---|
@@ -338,9 +338,9 @@ var response = client.send(request, BodyHandlers.ofString());
 
 In a Spring application, prefer `RestClient` or a declarative HTTP interface instead (`spring-boot.md`) so you get observability, error handling, and converters for free. Whatever client you use: set both connect and read timeouts, and reuse the client instance.
 
-## Beyond 21: what is new and what is still preview
+## Java 22–25: what the baseline adds over 21, and what is still preview
 
-Only reach for these when the project actually targets the version.
+Everything finalised here is part of the default Java 25 baseline, so use it. If the project is on 21, none of it compiles; stick to the 21 idiom.
 
 - **Unnamed variables and patterns `_` (22)** — `catch (IOException _)`, `case Point(int x, _)`. Small readability win that documents an intentionally unused binding.
 - **Foreign Function & Memory API (22)** — `MemorySegment`, `Arena`, `Linker`, `SymbolLookup`: the supported replacement for JNI and `sun.misc.Unsafe`, both of which are being restricted and removed. Restricted calls warn on stderr unless you pass `--enable-native-access=<module>|ALL-UNNAMED` (or set the `Enable-Native-Access` manifest attribute); the warning is slated to become an `IllegalCallerException`.
