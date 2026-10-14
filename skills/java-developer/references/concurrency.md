@@ -17,7 +17,7 @@ Read this before writing anything that involves a thread, an executor, shared mu
 - [Spring and async](#spring-and-async)
 - [Reactive: when it is still the right call](#reactive-when-it-is-still-the-right-call)
 - [Backpressure, rate limiting, bulkheads](#backpressure-rate-limiting-bulkheads)
-- [The bug catalogue](#the-bug-catalogue)
+- [The bug catalog](#the-bug-catalog)
 - [Documenting thread safety](#documenting-thread-safety)
 
 ## Decide the model first
@@ -35,12 +35,12 @@ Escalating from 1 to 4 should feel like a cost. If a code review cannot tell whi
 
 You do not need the formal spec, but you do need these facts:
 
-- **Without synchronisation, there is no guarantee another thread ever sees your write.** Not "it's delayed" — the JIT may hoist a non-volatile read out of a loop and spin forever on a stale value. This is why the "stop flag" bug below is real.
+- **Without synchronization, there is no guarantee another thread ever sees your write.** Not "it's delayed" — the JIT may hoist a non-volatile read out of a loop and spin forever on a stale value. This is why the "stop flag" bug below is real.
 - **`volatile` gives visibility and ordering, not atomicity.** `volatile int i; i++` is still a lost-update race, because that is read-modify-write. Use `AtomicInteger`.
 - **`final` fields are safe to publish** once the constructor completes, provided `this` did not escape during construction. Never start a thread or register a listener from a constructor — the object can be observed half-built.
-- **Safe publication** requires one of: static initialiser, `volatile`/`AtomicReference` write, `final` field, or writes guarded by the same lock that readers acquire. Putting an object into a `ConcurrentHashMap` publishes it safely; putting it into a plain `HashMap` does not.
+- **Safe publication** requires one of: static initializer, `volatile`/`AtomicReference` write, `final` field, or writes guarded by the same lock that readers acquire. Putting an object into a `ConcurrentHashMap` publishes it safely; putting it into a plain `HashMap` does not.
 - **Double-checked locking without `volatile` is broken.** Just use a static holder class or an enum singleton.
-- **64-bit non-volatile `long`/`double` reads can tear** on some platforms — another reason not to share unsynchronised primitives.
+- **64-bit non-volatile `long`/`double` reads can tear** on some platforms — another reason not to share unsynchronized primitives.
 
 ```java
 // Broken: may never terminate, regardless of what the other thread writes.
@@ -75,7 +75,7 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 ### The pitfalls that still bite
 
 - **Pinning.** A virtual thread that cannot unmount blocks its carrier. Through Java 21–23, a `synchronized` block held across a blocking call pinned the carrier; **JEP 491 (Java 24) fixed `synchronized` pinning**. Two consequences: on the **Java 25** baseline, `synchronized` around blocking I/O no longer pins, so you do not need to rewrite it for virtual threads; but if the project is **on Java 21, replace `synchronized` with `ReentrantLock` around blocking I/O** — the single most important virtual-thread gotcha there. Native frames (JNI, some native-backed calls) still pin on every version. Diagnose with the `jdk.VirtualThreadPinned` JFR event (or `-Djdk.tracePinnedThreads=full` on 21).
-- **Do not stop at "pinning" when the lock itself is the bottleneck.** A `synchronized` *instance method* on a singleton bean serialises on one monitor, so true concurrency through it is **1**, application-wide — queueing starts at the second concurrent request, regardless of how many carriers exist. Pinning compounds that but is not the whole story, and prescribing `ReentrantLock` while keeping one global lock around a network call fixes the carrier starvation and leaves the serialisation. Diagnose the lock scope first: what is actually being protected, and does it need to be held across the I/O at all? Usually the answer is a `ConcurrentHashMap` or a cache that needs no outer lock.
+- **Do not stop at "pinning" when the lock itself is the bottleneck.** A `synchronized` *instance method* on a singleton bean serializes on one monitor, so true concurrency through it is **1**, application-wide — queueing starts at the second concurrent request, regardless of how many carriers exist. Pinning compounds that but is not the whole story, and prescribing `ReentrantLock` while keeping one global lock around a network call fixes the carrier starvation and leaves the serialization. Diagnose the lock scope first: what is actually being protected, and does it need to be held across the I/O at all? Usually the answer is a `ConcurrentHashMap` or a cache that needs no outer lock.
 - **Enabling virtual threads removes backpressure you were relying on without knowing it.** A bounded Tomcat worker pool silently capped how many requests could pile onto a contended lock, a slow dependency, or an unbounded queue. Switch to virtual threads and that cap disappears, so latent contention that was invisible at 200 concurrent workers surfaces immediately at 20,000. A latency cliff right after enabling virtual threads is usually a pre-existing bottleneck being exposed, not a new one being created — look for the narrowest shared resource on the path and give it an explicit bound.
 - **`ThreadLocal` becomes expensive at scale.** Fine for a few hundred platform threads; a million virtual threads each holding a cached buffer is a heap problem. Prefer `ScopedValue`. Also note thread-local-backed caches and pools (e.g. some `SimpleDateFormat` or buffer caches) lose their point entirely.
 - **CPU-bound work does not benefit.** Virtual threads solve *blocking*, not throughput. For compute, use a bounded pool sized near `availableProcessors()`, or a `ForkJoinPool`. Running CPU-heavy tasks on virtual threads just starves carriers.
@@ -92,12 +92,12 @@ That switches the web server's request handling, `@Async`, and scheduled tasks t
 
 ## Structured concurrency
 
-The principle: if a task splits into subtasks, all subtasks must complete or be cancelled before the parent returns. This makes concurrent code behave like a single unit of work — errors propagate, cancellation propagates, and nothing leaks.
+The principle: if a task splits into subtasks, all subtasks must complete or be canceled before the parent returns. This makes concurrent code behave like a single unit of work — errors propagate, cancellation propagates, and nothing leaks.
 
 Status: still a **preview API** through Java 25 (JEP 505), and the API shape changed across versions — in Java 25 it is `StructuredTaskScope.open(...)` with joiners, not the earlier `new StructuredTaskScope.ShutdownOnFailure()`. Because of that churn, **do not use it in production code** on any version unless the team has accepted `--enable-preview`. Use the virtual-thread executor pattern above, which is final API and gives you most of the benefit.
 
 ```java
-// Java 25 preview shape — fail-fast fan-out, both subtasks cancelled if either fails.
+// Java 25 preview shape — fail-fast fan-out, both subtasks canceled if either fails.
 try (var scope = StructuredTaskScope.open(Joiner.<Object>allSuccessfulOrThrow())) {
     var user  = scope.fork(() -> userService.find(id));
     var order = scope.fork(() -> orderService.latestFor(id));
@@ -110,7 +110,7 @@ The pattern to carry away even without the API: **scope your fan-out**, propagat
 
 ## ScopedValue vs ThreadLocal
 
-`ScopedValue` (finalised in **Java 25**, JEP 506; preview before that) gives immutable, bounded-lifetime context that child structured tasks inherit — the right replacement for `ThreadLocal` in a virtual-thread world, because there is nothing to leak and nothing to clean up.
+`ScopedValue` (finalized in **Java 25**, JEP 506; preview before that) gives immutable, bounded-lifetime context that child structured tasks inherit — the right replacement for `ThreadLocal` in a virtual-thread world, because there is nothing to leak and nothing to clean up.
 
 ```java
 private static final ScopedValue<TenantId> TENANT = ScopedValue.newInstance();
@@ -172,7 +172,7 @@ CompletableFuture.allOf(a, b, c).join();                          // then read e
 | All threads reach a point together | `CyclicBarrier` |
 | Producer/consumer handoff | `BlockingQueue` (bounded!) / `TransferQueue` |
 | Wait for a condition on guarded state | `Condition.await/signalAll` in a `while` loop |
-| One-time initialisation | static holder class, or `enum` singleton |
+| One-time initialization | static holder class, or `enum` singleton |
 
 Rules that prevent most locking bugs: hold locks for the shortest possible time; **never make a blocking or remote call while holding a lock**; acquire multiple locks in a globally consistent order (this is the entirety of deadlock avoidance); do not call out to unknown code (listeners, overridable methods) while holding a lock; and always wait in a `while (!condition)` loop because spurious wakeups are permitted.
 
@@ -224,11 +224,11 @@ cache.compareAndSet(expected, replacement);
 
 For high-contention counters use `LongAdder`/`DoubleAdder` — they trade read cost for striped writes and are dramatically faster than `AtomicLong` under contention. For a complex object that must change atomically, the easiest correct approach is an immutable object in an `AtomicReference` updated with `updateAndGet`.
 
-Do not hand-write lock-free data structures. The existing ones are written by people who test with jcstress; yours will be subtly wrong under a memory model you did not fully internalise. `VarHandle` exists for the cases that genuinely need it, and those cases are rare.
+Do not hand-write lock-free data structures. The existing ones are written by people who test with jcstress; yours will be subtly wrong under a memory model you did not fully internalize. `VarHandle` exists for the cases that genuinely need it, and those cases are rare.
 
 ## Interruption and cancellation
 
-Interruption is cooperative. Code that ignores it produces tasks that cannot be cancelled and shutdowns that hang.
+Interruption is cooperative. Code that ignores it produces tasks that cannot be canceled and shutdowns that hang.
 
 ```java
 try {
@@ -272,9 +272,9 @@ Scaling concurrency without limiting it moves the failure instead of preventing 
 - **Bulkhead** independent dependencies so a slow one cannot consume all capacity: separate pools/semaphores per downstream.
 - **Timeouts everywhere**, shorter as you go deeper, so a caller's budget is never exceeded by a callee's retry.
 - **Circuit breakers and retry with jitter** (Resilience4j). Retry without backoff and jitter turns a blip into a self-inflicted stampede; retry without idempotency turns it into duplicate charges.
-- **Shed load deliberately** — returning 429/503 quickly is better behaviour than accepting work you cannot finish.
+- **Shed load deliberately** — returning 429/503 quickly is better behavior than accepting work you cannot finish.
 
-## The bug catalogue
+## The bug catalog
 
 | Bug | How it appears | Fix |
 |---|---|---|
@@ -307,7 +307,7 @@ Say it explicitly, in Javadoc, because the next reader cannot infer it:
  */
 
 /**
- * Thread-safe for concurrent reads; writes must be externally serialised by the caller.
+ * Thread-safe for concurrent reads; writes must be externally serialized by the caller.
  * All access to {@code #entries} is guarded by {@code lock}.
  */
 ```

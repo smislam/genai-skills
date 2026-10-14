@@ -1,6 +1,6 @@
 # Security
 
-Read this before writing anything that handles untrusted input, authentication, authorisation, crypto, or outbound requests — and when reviewing code for security. Security findings outrank style findings; report them first and be specific about the exploit path.
+Read this before writing anything that handles untrusted input, authentication, authorization, crypto, or outbound requests — and when reviewing code for security. Security findings outrank style findings; report them first and be specific about the exploit path.
 
 ## Contents
 - [Threat priorities](#threat-priorities)
@@ -41,7 +41,7 @@ Two implications for how you work. First, **access control is where the bugs are
 ## Access control
 
 ```java
-// Authorise on the DATA, not just the route.
+// Authorize on the DATA, not just the route.
 @PreAuthorize("hasRole('ADMIN')")
 public void deleteAccount(UUID accountId) { ... }
 
@@ -59,7 +59,7 @@ public Invoice get(UUID invoiceId, UUID callerId) {
 - **Never trust a client-supplied identity.** The user id comes from the authenticated principal, never from a request body, path, or header the client controls.
 - **Mass assignment:** binding a request directly onto an entity lets a caller set `role`, `balance`, or `ownerId`. Use DTOs with exactly the fields the caller may set — this is one of the strongest arguments for DTOs at the boundary.
 - **Protect every surface**, not just REST: Actuator endpoints, GraphQL resolvers, message consumers, scheduled admin jobs, and anything reachable through a service mesh.
-- **Test authorisation explicitly.** A test that asserts user B gets 404 for user A's resource is cheap and catches the regression that a code review will not.
+- **Test authorization explicitly.** A test that asserts user B gets 404 for user A's resource is cheap and catches the regression that a code review will not.
 
 ## Injection
 
@@ -82,7 +82,7 @@ SELECT * FROM invoice WHERE status = '%s'""".formatted(status)
 
 Specifics that catch people out:
 
-- **Identifiers cannot be parameterised.** Table names, column names, and `ORDER BY` directions must come from an **allowlist** (map the request value to an enum or a known constant), never from input.
+- **Identifiers cannot be parameterized.** Table names, column names, and `ORDER BY` directions must come from an **allowlist** (map the request value to an enum or a known constant), never from input.
 - **Spring Data `Sort`/`Pageable` injection.** A controller that accepts `Sort` straight from query parameters and feeds it to a **native query** passes attacker-controlled property names into the generated SQL — Spring Data does not validate them against anything. Map the incoming sort field through an allowlist before constructing `Sort`, and treat `JpaSort.unsafe()` as something you only use on input you validated yourself.
 - **`@Query` with SpEL** (`?#{...}`) evaluates an expression; user input must never reach the SpEL-evaluated portion.
 - **Least privilege for the database account** — the application should not own its schema or hold DBA rights. Migrations can run under a different account.
@@ -109,7 +109,7 @@ if (!target.startsWith(base)) {
 }
 ```
 
-Normalise and then verify containment — checking for `".."` in the string is defeated by encoding and by symlinks. Better still: **do not use client-supplied names as paths at all.** Generate a server-side identifier, store the original name as metadata.
+Normalize and then verify containment — checking for `".."` in the string is defeated by encoding and by symlinks. Better still: **do not use client-supplied names as paths at all.** Generate a server-side identifier, store the original name as metadata.
 
 For uploads: enforce a size limit (`spring.servlet.multipart.max-file-size` *and* a reverse-proxy limit), validate the content type by inspecting the bytes rather than trusting the header or extension, store outside the web root, never serve uploads from a path where they could be executed, and set `Content-Disposition: attachment` plus `X-Content-Type-Options: nosniff` when serving them back.
 
@@ -218,7 +218,7 @@ For a JWT resource server, configuring the issuer is not enough:
 - **Validate `iss` and `aud`.** Issuer-only validation means a token minted for service A is accepted by service B when both trust the same identity provider. Spring Boot exposes an audiences property; otherwise compose `JwtValidators.createDefaultWithIssuer(issuer)` with a `JwtClaimValidator<List<String>>(AUD, aud -> aud.contains(expected))` through a `DelegatingOAuth2TokenValidator` and set it on the decoder.
 - **Verify the signature against JWKS fetched over HTTPS**, pin the expected algorithm, and reject `alg: none` and HMAC tokens where you expect RSA/EC (algorithm confusion).
 - **Check expiry with a small clock skew**, and keep token lifetimes short.
-- **Do not put secrets or authorisation decisions you cannot revoke in the token.** A JWT is a bearer credential: anyone holding it is the user until it expires. Scope it narrowly, transmit over TLS only, and never log it or put it in a URL.
+- **Do not put secrets or authorization decisions you cannot revoke in the token.** A JWT is a bearer credential: anyone holding it is the user until it expires. Scope it narrowly, transmit over TLS only, and never log it or put it in a URL.
 - For sessions: regenerate the session id on login (Spring Security does this by default — do not disable it), invalidate on logout, and set an idle timeout.
 - Rate-limit and lock out on authentication endpoints; return the same generic message and similar timing for "unknown user" and "wrong password" so the endpoint is not a user enumeration oracle. Apply the same reasoning to password reset and registration.
 - Prefer an identity provider over hand-rolled authentication. If you do implement it, use Spring Security's building blocks rather than writing filters from scratch.
@@ -272,17 +272,17 @@ Now a top-three OWASP category, and the risk is not only known CVEs but also com
 - **Scan continuously**, not once: OWASP dependency-check (CPE/NVD-based; needs an NVD API key and produces some false positives for Java artifacts) or a coordinate-based scanner such as Sonatype OSS Index (generally fewer false positives for Maven coordinates). Running one in CI with a build-failing threshold is the point; which one matters less.
 - **Generate an SBOM** in CycloneDX format (now an Ecma standard, with good Maven/Gradle plugin support) and publish it with the artifact so vulnerabilities can be matched to deployments later.
 - **Verify provenance** where your platform supports it — signed artifacts and transparency-log attestation (Sigstore/SLSA) defend against a tampered release that a CVE scanner cannot see.
-- **Review new dependencies** before adding them: maintenance activity, transitive weight, licence, and whether the JDK already does the job. Every dependency is code you ship and must patch.
+- **Review new dependencies** before adding them: maintenance activity, transitive weight, license, and whether the JDK already does the job. Every dependency is code you ship and must patch.
 - **Keep the JDK and framework patched.** Most exploited Java vulnerabilities are old and fixed; the gap is upgrade latency, not unknown bugs.
 
 ## Logging and error handling
 
 - **Never log credentials, tokens, keys, full card numbers, or personal data.** Log identifiers, not payloads.
-- **Sanitise untrusted data before logging it** — strip CR/LF so an attacker cannot forge log lines, and be aware that log viewers interpret some content.
+- **Sanitize untrusted data before logging it** — strip CR/LF so an attacker cannot forge log lines, and be aware that log viewers interpret some content.
 - **Never return stack traces, SQL, or internal class names to clients** (`server.error.include-stacktrace=never`). Return a correlation id and log the detail server-side.
-- **Log security events** — authentication failures, authorisation denials, privilege changes, token issuance — with enough context to investigate, and make sure they reach somewhere that alerts. "Logging and alerting failures" is in the Top 10 because an undetected breach lasts longer.
-- **Fail closed.** An exception in an authorisation path must deny, never fall through to allow. Audit `catch` blocks on security paths specifically — the new "mishandling of exceptional conditions" category is about exactly this.
-- Historical note worth internalising: Log4Shell was a logging library evaluating lookups inside message content. Keep logging dependencies patched, and never pass untrusted input as a *format/pattern* rather than as an argument.
+- **Log security events** — authentication failures, authorization denials, privilege changes, token issuance — with enough context to investigate, and make sure they reach somewhere that alerts. "Logging and alerting failures" is in the Top 10 because an undetected breach lasts longer.
+- **Fail closed.** An exception in an authorization path must deny, never fall through to allow. Audit `catch` blocks on security paths specifically — the new "mishandling of exceptional conditions" category is about exactly this.
+- Historical note worth internalizing: Log4Shell was a logging library evaluating lookups inside message content. Keep logging dependencies patched, and never pass untrusted input as a *format/pattern* rather than as an argument.
 
 ## JVM and runtime hardening
 
@@ -297,17 +297,17 @@ Now a top-three OWASP category, and the risk is not only known CVEs but also com
 
 Work through this when writing or reviewing anything that touches untrusted input:
 
-- [ ] Every endpoint authenticates **and** authorises the specific resource, not just the route
+- [ ] Every endpoint authenticates **and** authorizes the specific resource, not just the route
 - [ ] Ownership checks are in the query (`findByIdAndOwnerId`), not bolted on afterwards
 - [ ] Request bodies bind to DTOs with only client-settable fields; no entity binding
 - [ ] All input validated at the boundary; identifiers and sort fields come from an allowlist
 - [ ] Every query uses bound parameters; no string-built SQL/JPQL anywhere, including `ORDER BY`
 - [ ] Outbound URLs from user input are allowlisted, redirect-restricted, and blocked from internal ranges
-- [ ] File paths normalised and verified inside the base directory; upload names not used as paths
+- [ ] File paths normalized and verified inside the base directory; upload names not used as paths
 - [ ] XML parsers hardened; no Java deserialization of untrusted data; Jackson polymorphism restricted to a named registry
 - [ ] No user input reaches SpEL, a template, or any evaluator
 - [ ] Passwords hashed with Argon2id/bcrypt at current parameters; tokens validated for issuer, audience, signature, algorithm, and expiry
 - [ ] Secrets come from the environment or a vault; none in source, config, logs, or responses
 - [ ] Errors return no internals; security events are logged; failures deny rather than allow
 - [ ] Dependencies scanned and current; SBOM produced
-- [ ] Authorisation, rejection, and failure paths have tests — not just the happy path
+- [ ] Authorization, rejection, and failure paths have tests — not just the happy path

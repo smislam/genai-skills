@@ -1,6 +1,6 @@
 # Functional Java
 
-Read this when composing behaviour out of functions, designing an API that takes a lambda, or deciding whether a functional style actually helps. Streams, `Optional`, and the language-level basics are in `modern-java.md`; this file is about using functions *as values*.
+Read this when composing behavior out of functions, designing an API that takes a lambda, or deciding whether a functional style actually helps. Streams, `Optional`, and the language-level basics are in `modern-java.md`; this file is about using functions *as values*.
 
 ## Contents
 - [The premise](#the-premise)
@@ -12,7 +12,7 @@ Read this when composing behaviour out of functions, designing an API that takes
 - [Higher-order functions](#higher-order-functions)
 - [Purity and side effects](#purity-and-side-effects)
 - [Functional error handling](#functional-error-handling)
-- [Laziness and memoisation](#laziness-and-memoisation)
+- [Laziness and memoization](#laziness-and-memoization)
 - [Recursion](#recursion)
 - [Collectors and gatherers](#collectors-and-gatherers)
 - [Vavr and friends](#vavr-and-friends)
@@ -25,7 +25,7 @@ Java is not a functional language and pretending otherwise produces code your te
 
 1. **Immutable data** removes whole bug classes — concurrency races, action at a distance, defensive copying (`design.md`).
 2. **Pure functions** are trivially testable: no setup, no mocks, no order dependence. Any logic you can push into a pure function gets cheaper to verify.
-3. **Behaviour as a parameter** removes the inheritance ceremony that Java used to demand — a lambda replaces a Strategy class, a Comparator replaces a subclass.
+3. **Behavior as a parameter** removes the inheritance ceremony that Java used to demand — a lambda replaces a Strategy class, a Comparator replaces a subclass.
 
 What does *not* pay in Java: currying, point-free style, monad stacks, and deep `Function` composition chains. The JVM has no tail-call elimination, the type system cannot express higher-kinded types, and stack traces through composed lambdas are genuinely hard to read. Take the three ideas above; leave the rest to languages built for it.
 
@@ -47,7 +47,7 @@ Almost every lambda you write targets one of these. Use the standard ones rather
 | `Runnable` | () → void | `run` | Deferred action, no value |
 | `Callable<T>` | () → T throws | `call` | Task that may throw — executors take these |
 
-**Primitive specialisations exist and matter on hot paths**: `IntPredicate`, `ToIntFunction`, `IntUnaryOperator`, `LongSupplier`, `DoubleBinaryOperator`, and so on. A `Function<Integer,Integer>` boxes on every call; an `IntUnaryOperator` does not. Use the primitive form when the code is hot or the volume is large, and the generic form when clarity matters more (`performance.md`).
+**Primitive specializations exist and matter on hot paths**: `IntPredicate`, `ToIntFunction`, `IntUnaryOperator`, `LongSupplier`, `DoubleBinaryOperator`, and so on. A `Function<Integer,Integer>` boxes on every call; an `IntUnaryOperator` does not. Use the primitive form when the code is hot or the volume is large, and the generic form when clarity matters more (`performance.md`).
 
 ## Composition
 
@@ -57,7 +57,7 @@ This is where functions-as-values earn their keep: small named pieces combined a
 Function<String, String> trim = String::strip;
 Function<String, String> lower = String::toLowerCase;
 
-Function<String, String> normalise = trim.andThen(lower);   // trim first, then lower
+Function<String, String> normalize = trim.andThen(lower);   // trim first, then lower
 Function<String, String> same      = lower.compose(trim);   // identical: compose runs the argument first
 ```
 
@@ -242,7 +242,7 @@ repository.findByEmail(email)
 
 Note `or` takes a `Supplier<Optional<T>>` and `orElseGet` takes a `Supplier<T>` — both lazy. `orElse` evaluates eagerly, so `orElse(expensiveCall())` runs the call even on the happy path.
 
-## Laziness and memoisation
+## Laziness and memoization
 
 `Supplier<T>` is deferred computation. The two patterns worth knowing:
 
@@ -250,8 +250,8 @@ Note `or` takes a `Supplier<Optional<T>>` and `orElseGet` takes a `Supplier<T>` 
 // Deferred: the message is only built if the condition fails.
 require(amount.isPositive(), () -> "Amount must be positive but was " + amount);
 
-// Memoised: computed at most once, thread-safe, no synchronisation on the hot path.
-static <T> Supplier<T> memoise(Supplier<T> delegate) {
+// Memoized: computed at most once, thread-safe, no synchronization on the hot path.
+static <T> Supplier<T> memoize(Supplier<T> delegate) {
     var cache = new AtomicReference<T>();
     return () -> {
         var v = cache.get();
@@ -265,7 +265,7 @@ static <T> Supplier<T> memoise(Supplier<T> delegate) {
 }
 ```
 
-Memoising a *pure* function is safe and is the main legitimate use of a cache without eviction — the value cannot go stale. Memoising an impure one is a bug. For keyed memoisation use a real cache (Caffeine), and never put a blocking call inside `ConcurrentHashMap.computeIfAbsent` (`concurrency.md`).
+Memoizing a *pure* function is safe and is the main legitimate use of a cache without eviction — the value cannot go stale. Memoizing an impure one is a bug. For keyed memoization use a real cache (Caffeine), and never put a blocking call inside `ConcurrentHashMap.computeIfAbsent` (`concurrency.md`).
 
 Java 25 previews *Lazy Constants* (formerly Stable Values) for exactly this, but it is still preview at JDK 27 — do not ship it.
 
@@ -324,7 +324,7 @@ The test is whether a competent colleague reads it faster. If the functional ver
 | Swap an algorithm at runtime | A lambda or `Map<Key, Function>` — not a Strategy class hierarchy |
 | Invariant resource handling, varying body | Higher-order method taking a `Function` |
 | Deferred or expensive default | `Supplier` + `orElseGet` |
-| Compute once, pure, immutable | Memoised `Supplier` |
+| Compute once, pure, immutable | Memoized `Supplier` |
 | Absent value, reason irrelevant | `Optional` return type |
 | Expected failure with a reason | Sealed result interface |
 | Truly exceptional condition | Exception |

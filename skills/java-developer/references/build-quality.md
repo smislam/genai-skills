@@ -34,7 +34,7 @@ The failure mode is predictable: enable everything at full strictness, get 900 v
 4. **Fix the baseline incrementally**, highest-severity first, and shrink the exclusion file in small reviewable commits.
 5. **Then turn on failure.**
 
-Do formatting (Spotless) first and in its own commit: it is purely mechanical, it makes every later diff smaller, and it has zero behavioural risk. Never mix a format-everything commit with a logic change — the real change becomes invisible.
+Do formatting (Spotless) first and in its own commit: it is purely mechanical, it makes every later diff smaller, and it has zero behavioral risk. Never mix a format-everything commit with a logic change — the real change becomes invisible.
 
 ## What each tool catches
 
@@ -203,7 +203,7 @@ tasks.jacocoTestCoverageVerification {
 }
 ```
 
-The floor exists to stop coverage silently collapsing, not to prove quality — a suite with no assertions can hit 100%. Branch coverage is the more informative number. If you want to know whether the tests actually *verify* behaviour, run mutation testing (PIT) on the modules with real logic; a high line coverage with a low mutation score is a clear signal the tests execute without checking. Never write a test purely to move the number (`testing.md`).
+The floor exists to stop coverage silently collapsing, not to prove quality — a suite with no assertions can hit 100%. Branch coverage is the more informative number. If you want to know whether the tests actually *verify* behavior, run mutation testing (PIT) on the modules with real logic; a high line coverage with a low mutation score is a clear signal the tests execute without checking. Never write a test purely to move the number (`testing.md`).
 
 ## Formatting
 

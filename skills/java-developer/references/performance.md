@@ -1,6 +1,6 @@
 # Performance and scaling
 
-Read this before optimising anything, choosing JVM flags, or answering "why is this slow". The order of this document is the order of the work: measure, then fix the thing the measurement found.
+Read this before optimizing anything, choosing JVM flags, or answering "why is this slow". The order of this document is the order of the work: measure, then fix the thing the measurement found.
 
 ## Contents
 - [Method](#method)
@@ -23,13 +23,13 @@ Read this before optimising anything, choosing JVM flags, or answering "why is t
 
 Performance work without measurement is guessing, and guessing in Java is unusually unreliable because the JIT, the GC, and the memory hierarchy all defeat intuition.
 
-1. **Define the goal numerically.** "p99 under 200 ms at 500 rps", not "faster". Without a target you cannot tell when to stop, and you will optimise something that did not matter.
+1. **Define the goal numerically.** "p99 under 200 ms at 500 rps", not "faster". Without a target you cannot tell when to stop, and you will optimize something that did not matter.
 2. **Measure the real thing.** Profile the application under representative load, not a microbenchmark of the code you suspect.
-3. **Find the actual bottleneck.** Usually it is I/O, a query, a lock, or allocation pressure — rarely the arithmetic someone wants to hand-optimise.
+3. **Find the actual bottleneck.** Usually it is I/O, a query, a lock, or allocation pressure — rarely the arithmetic someone wants to hand-optimize.
 4. **Change one thing, re-measure.** Batched changes make attribution impossible.
 5. **Keep the fix if the number moved and the code is still clear.** Revert clever code that bought 2%.
 
-Two framing points worth stating to a user who asks for optimisation: **the biggest wins are almost always algorithmic or architectural** — an N+1 query, a missing index, a missing cache, an O(n²) loop over a growing collection — and **clear code is fast enough almost everywhere**. Reserve micro-optimisation for the few paths a profiler proved hot.
+Two framing points worth stating to a user who asks for optimization: **the biggest wins are almost always algorithmic or architectural** — an N+1 query, a missing index, a missing cache, an O(n²) loop over a growing collection — and **clear code is fast enough almost everywhere**. Reserve micro-optimization for the few paths a profiler proved hot.
 
 ## Where the time actually goes
 
@@ -69,7 +69,7 @@ Also keep in the toolkit: `jcmd <pid> Thread.print` for a thread dump when somet
 
 ## JMH microbenchmarks
 
-Use JMH when you genuinely need to compare two implementations of a hot method. Never hand-roll a benchmark with `System.nanoTime()` around a loop — the JIT will optimise away work, and you will measure warmup.
+Use JMH when you genuinely need to compare two implementations of a hot method. Never hand-roll a benchmark with `System.nanoTime()` around a loop — the JIT will optimize away work, and you will measure warmup.
 
 ```java
 @BenchmarkMode(Mode.AverageTime)
@@ -112,7 +112,7 @@ Default to the collector the JDK gives you and change it only in response to a m
 |---|---|---|
 | **G1** (default) | Almost everything; balanced throughput and pause times | Set `-XX:MaxGCPauseMillis` as a *goal*, and otherwise leave it alone |
 | **Generational ZGC** | Low, predictable pause times matter (sub-millisecond), or the heap is very large | `-XX:+UseZGC`. Generational mode has been the default since JDK 23 and the only mode since 24. Trades some throughput and a little extra footprint for pause times |
-| **Parallel** | Batch jobs maximising throughput where pauses are irrelevant | `-XX:+UseParallelGC` |
+| **Parallel** | Batch jobs maximizing throughput where pauses are irrelevant | `-XX:+UseParallelGC` |
 | **Shenandoah** | Low-pause alternative where your JDK distribution supports it well | Generational mode available in recent releases; check your vendor's support |
 | **Serial** | Tiny heaps, single-core containers, short-lived CLI processes | Lowest overhead |
 
@@ -138,7 +138,7 @@ Heap is not the whole footprint. RSS also includes metaspace, code cache, thread
 
 ## Allocation and data structures
 
-Allocation in the JVM is cheap individually; **allocation *rate* is what costs you**, because it drives GC frequency. The target for optimisation is garbage volume, not object count.
+Allocation in the JVM is cheap individually; **allocation *rate* is what costs you**, because it drives GC frequency. The target for optimization is garbage volume, not object count.
 
 - Size collections when you know the size (`new ArrayList<>(expected)`, `HashMap` with capacity) to avoid repeated resize-and-copy.
 - Use primitive arrays and `IntStream`/`LongStream` on hot paths; boxing allocates and destroys cache locality.
@@ -194,10 +194,10 @@ Layers, cheapest first: in-process (Caffeine) for small hot data with tolerable 
 
 Full detail in `concurrency.md`; the performance-relevant summary:
 
-- **Parallelise independent remote calls.** Three serial 100 ms calls become one 100 ms wait. This is frequently the largest single win in a service that aggregates data, and with virtual threads it costs almost nothing in complexity.
+- **Parallelize independent remote calls.** Three serial 100 ms calls become one 100 ms wait. This is frequently the largest single win in a service that aggregates data, and with virtual threads it costs almost nothing in complexity.
 - **Virtual threads remove thread-pool sizing as a bottleneck for blocking I/O** — but they do not add parallelism for CPU-bound work, and they move your concurrency limit to the scarce resource (connection pool, downstream rate limit). On JDK 21–23, `synchronized` held across blocking I/O pins a carrier and can collapse throughput; JEP 491 fixed that in JDK 24.
 - **Lock contention shows up as low CPU with poor throughput.** Find it with a lock profile, then shrink the critical section, switch to an immutable snapshot, or partition the data.
-- **Bound queues and shed load** — unbounded queueing converts an overload into unbounded latency and then an OOM. Fast rejection is better behaviour.
+- **Bound queues and shed load** — unbounded queueing converts an overload into unbounded latency and then an OOM. Fast rejection is better behavior.
 - **Watch the common `ForkJoinPool`** — blocking work there stalls every parallel stream in the process.
 
 ## Startup time and footprint
@@ -206,7 +206,7 @@ Relevant when you scale rapidly, run serverless, or deploy frequently.
 
 - **Measure first:** `-Xlog:class+load` plus Boot's own startup logging will tell you whether time goes to classloading, bean creation, or a slow connection check at boot. Often it is one eager bean doing network I/O.
 - **CDS / AppCDS** — share and pre-parse class metadata. Cheap, no code change.
-- **AOT class loading and linking** (JDK 24+, JEP 483) goes further: a training run records class loading behaviour into an AOT cache, and production runs skip loading and linking rather than merely re-reading. JDK 25 adds one-command ergonomics (`-XX:AOTCacheOutput`, JEP 514) and cached method profiles so the JIT does not re-profile from scratch (JEP 515). This is the shipped part of Project Leyden and the best startup-per-effort ratio available today.
+- **AOT class loading and linking** (JDK 24+, JEP 483) goes further: a training run records class loading behavior into an AOT cache, and production runs skip loading and linking rather than merely re-reading. JDK 25 adds one-command ergonomics (`-XX:AOTCacheOutput`, JEP 514) and cached method profiles so the JIT does not re-profile from scratch (JEP 515). This is the shipped part of Project Leyden and the best startup-per-effort ratio available today.
 - **Spring AOT** processing turns `@Configuration` into generated bean-definition code, cutting reflection at startup — useful on the JVM and required for native images.
 - **GraalVM native image** gives very fast startup and a small footprint, at real cost: long builds, closed-world analysis, and explicit hints for reflection, proxies, and resources. Choose it when cold-start latency or memory density is a hard requirement — serverless, scale-to-zero, many small instances. Avoid it for reflection-heavy applications, anything needing runtime reconfiguration, or sustained-throughput compute where the JIT eventually beats AOT-compiled code.
 - Trim the image: `jlink` a custom runtime or use a JRE base, and layer the container so dependency layers cache.
@@ -215,7 +215,7 @@ Relevant when you scale rapidly, run serverless, or deploy frequently.
 
 Vertical scaling buys time; horizontal scaling needs the application to cooperate.
 
-- **Stateless instances.** No in-memory session state, no local file state, no "the scheduler runs on instance 1". Externalise session state or use tokens.
+- **Stateless instances.** No in-memory session state, no local file state, no "the scheduler runs on instance 1". Externalize session state or use tokens.
 - **Idempotent operations.** Retries, at-least-once message delivery, and duplicate submissions are facts of distributed life. Use idempotency keys and unique constraints so a duplicate is a no-op rather than a double charge.
 - **The database is the usual scaling limit.** Read replicas for read-heavy loads (accepting replication lag), connection pooling per instance sized for the aggregate, partitioning or sharding only when simpler options are exhausted.
 - **Singleton work needs coordination.** `@Scheduled` fires on every instance — use a distributed lock (ShedLock) or leader election.
@@ -254,7 +254,7 @@ Averages hide the problems that page people. Track:
 
 - **Latency percentiles** — p50, p95, **p99**, and max, per endpoint. An average of 40 ms with a p99 of 4 s is a broken service.
 - **Throughput and error rate**, per endpoint and per dependency.
-- **Saturation**: thread pool and connection pool utilisation and *wait time*, queue depth.
+- **Saturation**: thread pool and connection pool utilization and *wait time*, queue depth.
 - **GC**: pause time distribution, frequency, and **allocation rate** — the best leading indicator of GC pressure.
 - **Memory**: heap after collection (a rising floor is a leak), RSS versus the container limit.
 - **Database**: query count per request, slow queries, pool wait time, replication lag.

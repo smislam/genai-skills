@@ -23,14 +23,14 @@ Read this before writing or reviewing tests. The goal is tests that catch regres
 
 A good test has four properties, and they trade off against each other:
 
-1. **It fails when behaviour breaks** (protection against regression).
-2. **It does not fail when behaviour is preserved** (resistance to refactoring).
+1. **It fails when behavior breaks** (protection against regression).
+2. **It does not fail when behavior is preserved** (resistance to refactoring).
 3. **It tells you what is wrong from the failure message alone** (fast feedback).
 4. **It is cheap to maintain.**
 
-Property 2 is the one most often sacrificed, and it is the one that decides whether a suite is an asset or a tax. A test that asserts *how* the code works — which collaborator was called in which order, with mocks for every class — breaks on every refactor and passes when the logic is wrong. Test at the **seam**: public behaviour, observable outcome.
+Property 2 is the one most often sacrificed, and it is the one that decides whether a suite is an asset or a tax. A test that asserts *how* the code works — which collaborator was called in which order, with mocks for every class — breaks on every refactor and passes when the logic is wrong. Test at the **seam**: public behavior, observable outcome.
 
-The practical rule: assert on **return values and state changes you could observe from outside the unit**. Reach for `verify()` only when the interaction *is* the behaviour (an email was sent, a message was published, nothing was charged twice).
+The practical rule: assert on **return values and state changes you could observe from outside the unit**. Reach for `verify()` only when the interaction *is* the behavior (an email was sent, a message was published, nothing was charged twice).
 
 ## The test pyramid, concretely
 
@@ -64,7 +64,7 @@ void rejectsTransferWhenBalanceInsufficient() {
 }
 ```
 
-Name the test after the **behaviour and the condition**, not the method. `rejectsTransferWhenBalanceInsufficient` tells you what broke from the CI log alone; `testWithdraw2` requires opening the file. Use `@DisplayName` for prose when the name gets unwieldy, and `@Nested` classes to group by scenario:
+Name the test after the **behavior and the condition**, not the method. `rejectsTransferWhenBalanceInsufficient` tells you what broke from the CI log alone; `testWithdraw2` requires opening the file. Use `@DisplayName` for prose when the name gets unwieldy, and `@Nested` classes to group by scenario:
 
 ```java
 @Nested
@@ -154,7 +154,7 @@ assertThat(instant).isCloseTo(expected, within(1, ChronoUnit.SECONDS));
 
 `usingRecursiveComparison()` with ignored volatile fields is the cleanest way to assert a whole object without fifteen separate field assertions that drift out of date.
 
-When a domain assertion repeats across tests, write a custom assert (`assertThat(invoice).isSettled()`) — it reads like the domain and centralises the failure message.
+When a domain assertion repeats across tests, write a custom assert (`assertThat(invoice).isSettled()`) — it reads like the domain and centralizes the failure message.
 
 Use `SoftAssertions` / `assertSoftly` when several independent properties should all be reported:
 
@@ -168,7 +168,7 @@ assertSoftly(softly -> {
 
 ## Mockito: and when not to mock
 
-Mock **what you own and what crosses a boundary you cannot cheaply run**: a payment gateway, an SMTP client, a clock. Do not mock value objects, collections, the thing under test, or types you do not own (mocking a third-party library's API encodes your *assumption* about its behaviour and passes happily when the assumption is wrong — wrap it in your own interface and mock that).
+Mock **what you own and what crosses a boundary you cannot cheaply run**: a payment gateway, an SMTP client, a clock. Do not mock value objects, collections, the thing under test, or types you do not own (mocking a third-party library's API encodes your *assumption* about its behavior and passes happily when the assumption is wrong — wrap it in your own interface and mock that).
 
 ```java
 @ExtendWith(MockitoExtension.class)
@@ -198,7 +198,7 @@ Notes that prevent the common mistakes:
 - `@Spy` and `doReturn().when(spy)` on the class under test are a design smell: you are stubbing the thing you are testing. Extract the collaborator instead.
 - Mocking statics (`mockStatic`) or final methods is possible but is a signal that a static dependency should have been injected. Fix the design when you can.
 
-**A hand-written fake often beats a mock.** An in-memory `Map`-backed `InvoiceRepository` implementing the port makes tests read as behaviour rather than call sequences, supports the whole suite, and doubles as a check that the port is actually implementable.
+**A hand-written fake often beats a mock.** An in-memory `Map`-backed `InvoiceRepository` implementing the port makes tests read as behavior rather than call sequences, supports the whole suite, and doubles as a check that the port is actually implementable.
 
 ## Spring Boot test slices
 
@@ -233,7 +233,7 @@ This is where you test status codes, validation messages, JSON shape, and error 
 
 **`@JsonTest`** — serialization contracts, for when the API shape matters and you don't want a web test for it.
 
-**`@SpringBootTest`** — full context, for wiring and cross-cutting behaviour. Use sparingly and keep the configuration identical across these tests so Spring's context cache is actually hit; every distinct combination of properties, mocked beans, or active profiles builds and caches a *new* context, which is the usual cause of a suite that takes ten minutes. `@DirtiesContext` discards the cache — treat each use as a deliberate cost.
+**`@SpringBootTest`** — full context, for wiring and cross-cutting behavior. Use sparingly and keep the configuration identical across these tests so Spring's context cache is actually hit; every distinct combination of properties, mocked beans, or active profiles builds and caches a *new* context, which is the usual cause of a suite that takes ten minutes. `@DirtiesContext` discards the cache — treat each use as a deliberate cost.
 
 Use `@ServiceConnection` on a Testcontainer to wire datasource properties automatically instead of hand-written `@DynamicPropertySource`.
 
@@ -339,7 +339,7 @@ void parsingAFormattedIbanRoundTrips(@ForAll("validIbans") String iban) {
 
 Good properties to look for: round-trip (`parse(format(x)) == x`), invariance (sorting preserves size and multiset), idempotency, commutativity, and comparison against a slow-but-obviously-correct reference implementation.
 
-**Mutation testing** (PIT) answers the question coverage cannot: do your tests actually *detect* broken code? It mutates bytecode and reports which mutants survived. Run it on the modules with real logic — a high line coverage with a low mutation score means the tests execute the code without checking it. Treat the surviving mutants as a to-do list, not a metric to maximise.
+**Mutation testing** (PIT) answers the question coverage cannot: do your tests actually *detect* broken code? It mutates bytecode and reports which mutants survived. Run it on the modules with real logic — a high line coverage with a low mutation score means the tests execute the code without checking it. Treat the surviving mutants as a to-do list, not a metric to maximize.
 
 ## Coverage: what the number means
 

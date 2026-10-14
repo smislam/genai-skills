@@ -4,12 +4,12 @@ Read this when deciding how to structure code — classes, boundaries, layering,
 
 ## Contents
 - [The decision order](#the-decision-order)
-- [SOLID with judgement](#solid-with-judgement)
+- [SOLID with judgment](#solid-with-judgment)
 - [DRY, KISS, YAGNI and how they conflict](#dry-kiss-yagni-and-how-they-conflict)
 - [Patterns by the pressure they relieve](#patterns-by-the-pressure-they-relieve)
 - [Effective Java: the items that change code most](#effective-java-the-items-that-change-code-most)
 - [Clean / hexagonal architecture in a Java project](#clean--hexagonal-architecture-in-a-java-project)
-- [Domain modelling with records and sealed types](#domain-modelling-with-records-and-sealed-types)
+- [Domain modeling with records and sealed types](#domain-modeling-with-records-and-sealed-types)
 - [Refactoring moves worth knowing by name](#refactoring-moves-worth-knowing-by-name)
 - [Smells and what they actually indicate](#smells-and-what-they-actually-indicate)
 
@@ -24,18 +24,18 @@ Work outside-in, and stop as soon as the code is clear:
 
 Reversing this order is how codebases end up with `AbstractSingletonProxyFactoryBean`.
 
-## SOLID with judgement
+## SOLID with judgment
 
 SOLID is five heuristics, not five laws. Each has a failure mode when applied without thought.
 
 **Single Responsibility** — a class should have one reason to change, where "reason" means one stakeholder or one axis of volatility. Pricing rules change when finance changes its mind; PDF layout changes when marketing does. Those belong in different classes.
 *Failure mode:* reading "responsibility" as "one method" and producing a cloud of single-method classes with no cohesive concept. Cohesion is the point, not smallness.
 
-**Open/Closed** — you should be able to add behaviour by adding code, not editing existing code. Achieved in Java with polymorphism, strategies, or sealed hierarchies plus exhaustive switch.
+**Open/Closed** — you should be able to add behavior by adding code, not editing existing code. Achieved in Java with polymorphism, strategies, or sealed hierarchies plus exhaustive switch.
 *Failure mode:* extension points nobody uses. Every unused hook is dead weight and a false constraint. Add the seam when the second case arrives — the second case teaches you where the seam actually belongs.
 
-**Liskov Substitution** — a subtype must honour the supertype's contract: no strengthened preconditions, no weakened postconditions, no new exceptions callers cannot anticipate. The classic violation is `Square extends Rectangle` with independent width/height setters, and the common real one is an override that throws `UnsupportedOperationException`.
-*Practical consequence:* prefer composition. In Java, `sealed` interfaces let you model a closed set of variants without inheritance of behaviour at all.
+**Liskov Substitution** — a subtype must honor the supertype's contract: no strengthened preconditions, no weakened postconditions, no new exceptions callers cannot anticipate. The classic violation is `Square extends Rectangle` with independent width/height setters, and the common real one is an override that throws `UnsupportedOperationException`.
+*Practical consequence:* prefer composition. In Java, `sealed` interfaces let you model a closed set of variants without inheritance of behavior at all.
 
 **Interface Segregation** — clients should not be forced to depend on methods they do not use. A fat interface forces every implementor and every test double to deal with irrelevant methods.
 *Practical consequence:* define the interface from the **client's** need and name it accordingly. `OrderRepository` with the three methods the order service actually uses beats a generic `Dao<T>` with twenty.
@@ -76,7 +76,7 @@ Look up the pressure, not the pattern. If no row describes your situation, you d
 | Constructor has many optional parameters | **Builder** | Prefer a `record` + static factories first; builder past ~4 optional params. Make the built object immutable. |
 | Caller must not know which concrete type it gets | **Factory Method / Static Factory** | `static of(...)`, `from(...)`, `valueOf(...)`. Lets you cache, return a subtype, or change the type later. |
 | Related objects must be created as a consistent family | **Abstract Factory** | Rare in Spring apps — configuration classes usually serve this role. |
-| Exactly one instance, globally | **Singleton** | Use a Spring bean or an `enum` singleton. Never a lazily-initialised mutable static — it is a testability and concurrency trap. |
+| Exactly one instance, globally | **Singleton** | Use a Spring bean or an `enum` singleton. Never a lazily-initialized mutable static — it is a testability and concurrency trap. |
 | Copying an object with small variations | **Prototype / wither** | Records: add `withX()` methods returning a new instance. |
 
 ### Structure
@@ -84,20 +84,20 @@ Look up the pressure, not the pattern. If no row describes your situation, you d
 | Pressure | Pattern | Java-specific note |
 |---|---|---|
 | Third-party API's shape is wrong for your domain | **Adapter** | The core of hexagonal architecture — one adapter per external system. |
-| Need to add behaviour to objects without subclass explosion | **Decorator** | Caching, retry, metrics, auth wrappers. Compose at wiring time. |
+| Need to add behavior to objects without subclass explosion | **Decorator** | Caching, retry, metrics, auth wrappers. Compose at wiring time. |
 | Expensive or remote resource, want transparent access control | **Proxy** | Spring AOP is proxy-based — this is why `@Transactional` self-invocation silently does nothing. |
 | Subsystem is too fine-grained for callers | **Facade** | An application service is a facade over domain objects. |
 | Part/whole hierarchies treated uniformly | **Composite** | Permission trees, nested validation rules, expression trees. |
 | Abstraction and implementation must vary independently | **Bridge** | Uncommon; usually over-applied. SLF4J is the canonical real example. |
 
-### Behaviour
+### Behavior
 
 | Pressure | Pattern | Java-specific note |
 |---|---|---|
 | Algorithm must be chosen at runtime | **Strategy** | A lambda or a `Map<Key, Strategy>` is usually enough. Spring: inject `List<Strategy>` and dispatch on a `supports()` method. |
 | Invariant steps with varying details | **Template Method** | Prefer composition — pass the varying step as a function. Inheritance-based template methods resist testing. |
 | Interested parties must react to a state change | **Observer** | Spring `ApplicationEventPublisher` + `@EventListener` / `@TransactionalEventListener`. Watch ordering and transaction semantics. |
-| Behaviour depends on a state machine with legal transitions | **State** | Model states as a sealed interface; transitions return the next state. Make illegal transitions uncompilable or explicit failures. |
+| Behavior depends on a state machine with legal transitions | **State** | Model states as a sealed interface; transitions return the next state. Make illegal transitions uncompilable or explicit failures. |
 | Request must be queued, logged, undone, or retried | **Command** | Pairs naturally with CQRS-style application services. |
 | New operation needed over a closed type hierarchy | **Visitor** — or, in modern Java, **pattern matching over a sealed interface** | Sealed + exhaustive `switch` gives the same safety with far less ceremony. Prefer it. |
 | Traversal independent of structure | **Iterator** | Already in the language. Implement `Iterable`; do not reinvent. |
@@ -112,8 +112,8 @@ Joshua Bloch's items, condensed to the ones that most often improve real code:
 - **Static factories over constructors** — they can be named, can cache, and can return subtypes.
 - **Builder for many parameters** — telescoping constructors and `setX()`-then-use are both worse.
 - **Prefer dependency injection to hardwiring resources** — the testability argument in one item.
-- **Minimise mutability** — make the class immutable unless you have a reason; then make fields `final` and don't publish internal references.
-- **Favour composition over inheritance** — inheritance across package boundaries is fragile; `extends` is a promise about the superclass's internals.
+- **Minimize mutability** — make the class immutable unless you have a reason; then make fields `final` and don't publish internal references.
+- **Favor composition over inheritance** — inheritance across package boundaries is fragile; `extends` is a promise about the superclass's internals.
 - **Design for inheritance or prohibit it** — classes are `final` by default unless you documented self-use patterns.
 - **Prefer interfaces to abstract classes** — with default methods, the reasons to use abstract classes have narrowed to shared state.
 - **Use generics; don't use raw types** — and prefer `List<? extends T>` parameters (PECS: producer-extends, consumer-super).
@@ -123,10 +123,10 @@ Joshua Bloch's items, condensed to the ones that most often improve real code:
 - **Override `toString`** — it goes in every log line and failure message.
 - **Prefer try-with-resources to try-finally** — correct suppression handling, no leaked close.
 - **Use exceptions only for exceptional conditions**; prefer standard exceptions; include failure-capture information in the message.
-- **Prefer `java.util.concurrent` to `wait`/`notify`**; document thread safety; avoid excessive synchronisation.
+- **Prefer `java.util.concurrent` to `wait`/`notify`**; document thread safety; avoid excessive synchronization.
 - **Prefer enums to int constants**; use `EnumMap`/`EnumSet` over ordinals.
 - **Avoid unnecessary object creation** — but do not sacrifice clarity for allocation you have not measured.
-- **Minimise the accessibility of classes and members** — package-private is underused in Java; most implementation classes should not be `public`.
+- **Minimize the accessibility of classes and members** — package-private is underused in Java; most implementation classes should not be `public`.
 
 ## Clean / hexagonal architecture in a Java project
 
@@ -157,14 +157,14 @@ Why package-by-feature on the outside: changes arrive by feature, not by layer. 
 Rules that keep this honest:
 - **The domain has no framework imports.** Enforce it with ArchUnit (`references/testing.md`) rather than discipline — discipline erodes.
 - **Keep persistence entities separate from domain aggregates** when the domain has real invariants. JPA's demands (no-arg constructor, mutable fields, lazy proxies) corrupt a domain model. For CRUD-shaped features with no invariants, one class is fine and the mapping layer is pure cost — be honest about which kind of feature you have.
-- **DTOs at the edge, always.** Never serialise a domain object or an entity straight to JSON: it couples your wire contract to your schema and silently leaks fields.
+- **DTOs at the edge, always.** Never serialize a domain object or an entity straight to JSON: it couples your wire contract to your schema and silently leaks fields.
 - **Transactions belong to the use case.** One transaction per use case, started in the application layer.
 
 ### When not to do this
 
 A three-endpoint CRUD service does not need ports, adapters, and a mapping layer; it needs a controller, a repository, and tests. Apply the full structure when there is real domain logic, multiple integrations, or a long-lived codebase with many hands. Say which situation you think you are in when you choose.
 
-## Domain modelling with records and sealed types
+## Domain modeling with records and sealed types
 
 Make illegal states unrepresentable — the cheapest correctness technique in Java.
 
@@ -217,7 +217,7 @@ Use a sealed result type instead of exceptions when the alternative outcomes are
 
 ## Refactoring moves worth knowing by name
 
-Fowler's catalogue, as applied to the situations that come up constantly. Naming the move makes the change reviewable:
+Fowler's catalog, as applied to the situations that come up constantly. Naming the move makes the change reviewable:
 
 - **Extract Method / Extract Class** — the two workhorses. Extract when a block has a name.
 - **Replace Conditional with Polymorphism** — or, in modern Java, with a sealed hierarchy and exhaustive switch.
@@ -228,9 +228,9 @@ Fowler's catalogue, as applied to the situations that come up constantly. Naming
 - **Replace Nested Conditional with Guard Clauses** — early return flattens code and removes the `else` cliff.
 - **Separate Query from Modifier** — a method that both returns data and mutates state cannot be reasoned about or safely retried.
 
-Refactor under green tests, in small commits, one move at a time. Behaviour-preserving changes and behaviour changes do not belong in the same commit — when something breaks, nobody can tell which half did it.
+Refactor under green tests, in small commits, one move at a time. Behavior-preserving changes and behavior changes do not belong in the same commit — when something breaks, nobody can tell which half did it.
 
-If the code you need to restructure has no tests, or the change is too large for one commit, that is a different problem: see `refactoring.md` for seams, characterisation tests, and the expand/migrate/contract and strangler-fig patterns.
+If the code you need to restructure has no tests, or the change is too large for one commit, that is a different problem: see `refactoring.md` for seams, characterization tests, and the expand/migrate/contract and strangler-fig patterns.
 
 ## Smells and what they actually indicate
 
@@ -238,7 +238,7 @@ If the code you need to restructure has no tests, or the change is too large for
 |---|---|
 | Long method | Multiple levels of abstraction mixed; extract named steps |
 | Long parameter list | A missing parameter object, or the method does too much |
-| Feature envy (method uses another object's data constantly) | Behaviour is on the wrong class — move it to the data |
+| Feature envy (method uses another object's data constantly) | Behavior is on the wrong class — move it to the data |
 | Anemic domain model (all getters/setters, logic in services) | Procedural code wearing OO clothes; push invariants into the aggregate |
 | Primitive obsession (`String`, `long` for domain concepts) | Missing value objects |
 | Shotgun surgery (one change touches many files) | Wrong seams; knowledge is scattered |

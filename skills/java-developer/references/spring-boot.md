@@ -255,7 +255,7 @@ public class InvoiceEntity {
 - **`@Version` for optimistic locking** on anything concurrently editable. Without it, last-write-wins silently loses updates. Use `@Lock(PESSIMISTIC_WRITE)` only for short, contended critical sections.
 - **`EnumType.STRING`**, always.
 - **Paginate.** `findAll()` on a real table is an outage. Note that pagination combined with `JOIN FETCH` of a collection forces in-memory paging — use a two-query approach (ids first, then fetch) for that case.
-- **Never expose entities over HTTP.** Lazy proxies serialise unpredictably and you leak schema.
+- **Never expose entities over HTTP.** Lazy proxies serialize unpredictably and you leak schema.
 - **Beware `@Data`/Lombok on entities** — generated `equals`/`hashCode`/`toString` touch lazy collections, triggering loads and `StackOverflowError` on bidirectional relations.
 - **Use DTO projections for reads** (`interface InvoiceSummary { UUID getId(); BigDecimal getTotal(); }` or a constructor expression) — fetching whole entity graphs to render a list is the most common avoidable cost.
 - **Schema is managed by migrations** (Flyway or Liquibase). Set `spring.jpa.hibernate.ddl-auto=validate` in every real environment; `update` is a data-loss mechanism and `create-drop` belongs only in throwaway tests.
@@ -282,7 +282,7 @@ The traps, all of which are common in real codebases:
 - **Only public methods are advised** by the default proxying. A `@Transactional` private or package-private method is silently ignored (unless AspectJ weaving is configured).
 - **Rollback is only automatic for unchecked exceptions.** A checked exception commits by default — declare `@Transactional(rollbackFor = ...)` if you throw one.
 - **Keep transactions short and free of I/O.** An HTTP call inside a transaction holds a database connection for the duration of someone else's outage. Do remote work before or after, and use `@TransactionalEventListener(AFTER_COMMIT)` for post-commit side effects.
-- **`@Transactional` on a controller** stretches the transaction over serialisation. Put it on the application service, one transaction per use case.
+- **`@Transactional` on a controller** stretches the transaction over serialization. Put it on the application service, one transaction per use case.
 - **`readOnly = true` for queries** — measurable benefit at scale, and it documents intent.
 - **Transaction ≠ distributed transaction.** For cross-service consistency use the outbox pattern or sagas; `@Transactional` will not help you.
 
@@ -364,7 +364,7 @@ Cardinality is the one trap that bites hard: a tag with unbounded values (ids, e
 
 ## Testing
 
-Covered in depth in `testing.md`. The Spring-specific summary: unit-test domain and services with plain constructors and fakes; `@WebMvcTest` for the HTTP contract; `@DataJpaTest` + Testcontainers against the real database engine for mappings and queries; `@SpringBootTest` sparingly, with identical configuration so the context cache is reused. Use `@ServiceConnection` to wire containers, and keep H2 out of tests whose point is SQL behaviour.
+Covered in depth in `testing.md`. The Spring-specific summary: unit-test domain and services with plain constructors and fakes; `@WebMvcTest` for the HTTP contract; `@DataJpaTest` + Testcontainers against the real database engine for mappings and queries; `@SpringBootTest` sparingly, with identical configuration so the context cache is reused. Use `@ServiceConnection` to wire containers, and keep H2 out of tests whose point is SQL behavior.
 
 ## Packaging and containers
 
@@ -380,7 +380,7 @@ Boot 4.x (on Spring Framework 7) is the default here. Its differences from 3.x a
 
 Write new code the Boot 4 way. On a 3.x project, these are the places the code differs:
 
-- **Jar and package reorganisation.** Boot now ships as many smaller modules under dedicated `org.springframework.boot.<module>` packages, with technology-specific starters replacing some broad ones. This changes imports and dependency coordinates across the board — it is the bulk of the migration diff.
+- **Jar and package reorganization.** Boot now ships as many smaller modules under dedicated `org.springframework.boot.<module>` packages, with technology-specific starters replacing some broad ones. This changes imports and dependency coordinates across the board — it is the bulk of the migration diff.
 - **Jackson 3.** The group id moves from `com.fasterxml.jackson` to `tools.jackson`, with class renames. Jackson 2 support remains only in deprecated form. Write custom serializers, modules, and mapper configuration against Jackson 3; on 3.x, use the `com.fasterxml.jackson` equivalents.
 - **JSpecify nullability annotations** replace `org.springframework.lang.@Nullable`/`@NonNull` throughout the framework. Use `org.jspecify.annotations` in your own code too. Combined with a null checker, this surfaces warnings in previously quiet code — usually real latent bugs.
 - **`@MockBean` and `@SpyBean` are removed.** Use `@MockitoBean` / `@MockitoSpyBean` (also available from Boot 3.4, so prefer them there too).
@@ -396,8 +396,8 @@ Read the official Boot 4.0 migration guide for the authoritative list; the detai
 | Anti-pattern | Why it hurts | Instead |
 |---|---|---|
 | `@Autowired` fields | Untestable, non-final, hides cycles | Constructor injection |
-| Entity anywhere in the web layer | Couples API to schema; mass assignment; lazy-proxy serialisation. A DTO-only method signature is not enough — if the controller imports the entity and maps it on the last line, the coupling is still there | DTO records, mapped in the service; enforce with the ArchUnit rule in `testing.md` |
-| `@Transactional` on controllers | Transaction spans serialisation and HTTP | On the application service |
+| Entity anywhere in the web layer | Couples API to schema; mass assignment; lazy-proxy serialization. A DTO-only method signature is not enough — if the controller imports the entity and maps it on the last line, the coupling is still there | DTO records, mapped in the service; enforce with the ArchUnit rule in `testing.md` |
+| `@Transactional` on controllers | Transaction spans serialization and HTTP | On the application service |
 | Business logic in controllers | Untestable without MVC; unreusable | Application service |
 | `findAll()` on a real table | Unbounded memory and latency | `Pageable` |
 | EAGER relations to "fix" N+1 | Loads the world on every query | `JOIN FETCH` / `@EntityGraph` / projections |

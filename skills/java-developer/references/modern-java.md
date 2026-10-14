@@ -1,6 +1,6 @@
 # Modern Java: language and API
 
-Read this when choosing language features or standard-library APIs. The default target is **Java 25 LTS**. Features finalised after 21 are marked with their version, so you can tell what to avoid if a project is still on 21.
+Read this when choosing language features or standard-library APIs. The default target is **Java 25 LTS**. Features finalized after 21 are marked with their version, so you can tell what to avoid if a project is still on 21.
 
 Verify the project's actual level before using anything here — `maven.compiler.release`, `<java.version>`, or `languageVersion` in the Gradle toolchain. A feature that does not compile is worse than an old idiom.
 
@@ -73,7 +73,7 @@ A record is the right default for any data carrier: DTOs, value objects, command
 ```java
 public record InvoiceLine(String sku, int quantity, Money unitPrice) {
 
-    // Compact constructor: validation and normalisation, once, unbypassable.
+    // Compact constructor: validation and normalization, once, unbypassable.
     public InvoiceLine {
         Objects.requireNonNull(sku, "sku");
         if (quantity <= 0) throw new IllegalArgumentException("quantity must be positive: " + quantity);
@@ -89,7 +89,7 @@ public record InvoiceLine(String sku, int quantity, Money unitPrice) {
 
 Things worth knowing:
 - Records are **shallowly** immutable. A `record Order(List<Line> lines)` can still have its list mutated by whoever passed it. Defensively copy in the compact constructor (`lines = List.copyOf(lines)`) when the record must be a real value.
-- Records can implement interfaces and be nested inside a sealed interface — that combination is the workhorse of modern domain modelling (see `design.md`).
+- Records can implement interfaces and be nested inside a sealed interface — that combination is the workhorse of modern domain modeling (see `design.md`).
 - A record with a mutable field, a setter, or framework-required no-arg constructor is not a record use case. JPA entities in particular cannot be records.
 - For many optional components, add a builder or static factories; records do not have optional parameters.
 - "Withers": write explicit `withQuantity(int)` methods returning a new instance. There is no language support yet.
@@ -209,7 +209,7 @@ opt.orElse(expensiveDefault())                    // eagerly evaluated — use o
 Optional<List<X>>                                 // return an empty list instead
 ```
 
-Never return `Optional` from a collection-returning method, never put it in a DTO you serialise, and prefer `orElseThrow()` over `get()` (which is deprecated-in-spirit and reads like it cannot fail).
+Never return `Optional` from a collection-returning method, never put it in a DTO you serialize, and prefer `orElseThrow()` over `get()` (which is deprecated-in-spirit and reads like it cannot fail).
 
 ## Streams and collections
 
@@ -265,7 +265,7 @@ var fmt = DateTimeFormatter.ISO_INSTANT;                      // thread-safe, un
 var berlin = instant.atZone(ZoneId.of("Europe/Berlin"));
 ```
 
-Store and compute in UTC (`Instant`), convert to a zone only for display. Inject a `Clock` instead of calling `Instant.now()` directly so the behaviour is testable (`testing.md`). Use IANA zone IDs, never three-letter abbreviations.
+Store and compute in UTC (`Instant`), convert to a zone only for display. Inject a `Clock` instead of calling `Instant.now()` directly so the behavior is testable (`testing.md`). Use IANA zone IDs, never three-letter abbreviations.
 
 ## Numbers and money
 
@@ -315,7 +315,7 @@ try (var lines = Files.lines(path, UTF_8)) {                  // lazy; MUST be c
 try (var walk = Files.walk(dir)) { ... }                      // also closeable
 ```
 
-Always specify a charset — platform default is a portability bug (it is UTF-8 by default since Java 18, but explicit beats implicit and older targets differ). Use `Files.createTempFile` with restrictive permissions rather than predictable paths in `/tmp`. Validate and normalise any path built from user input (`security.md`).
+Always specify a charset — platform default is a portability bug (it is UTF-8 by default since Java 18, but explicit beats implicit and older targets differ). Use `Files.createTempFile` with restrictive permissions rather than predictable paths in `/tmp`. Validate and normalize any path built from user input (`security.md`).
 
 ## HTTP client
 
@@ -340,7 +340,7 @@ In a Spring application, prefer `RestClient` or a declarative HTTP interface ins
 
 ## Java 22–25: what the baseline adds over 21, and what is still preview
 
-Everything finalised here is part of the default Java 25 baseline, so use it. If the project is on 21, none of it compiles; stick to the 21 idiom.
+Everything finalized here is part of the default Java 25 baseline, so use it. If the project is on 21, none of it compiles; stick to the 21 idiom.
 
 - **Unnamed variables and patterns `_` (22)** — `catch (IOException _)`, `case Point(int x, _)`. Small readability win that documents an intentionally unused binding.
 - **Foreign Function & Memory API (22)** — `MemorySegment`, `Arena`, `Linker`, `SymbolLookup`: the supported replacement for JNI and `sun.misc.Unsafe`, both of which are being restricted and removed. Restricted calls warn on stderr unless you pass `--enable-native-access=<module>|ALL-UNNAMED` (or set the `Enable-Native-Access` manifest attribute); the warning is slated to become an `IllegalCallerException`.
@@ -361,7 +361,7 @@ SLF4J API, with Logback or Log4j2 as the binding. In Spring Boot, use the bundle
 ```java
 private static final Logger log = LoggerFactory.getLogger(InvoiceService.class);
 
-log.info("Issued invoice {} for account {} totalling {}", invoiceId, accountId, total);
+log.info("Issued invoice {} for account {} totaling {}", invoiceId, accountId, total);
 log.atDebug().addKeyValue("invoiceId", invoiceId).log("Recalculated totals");   // fluent, structured
 log.error("Failed to settle invoice {}", invoiceId, e);                         // exception LAST, no placeholder
 ```
@@ -378,7 +378,7 @@ log.error("Failed to settle invoice {}", invoiceId, e);                         
 
 JPMS (`module-info.java`) is worth it for libraries and for `jlink`-ed runtimes, where a small, well-defined surface and a trimmed image pay off. For a typical Spring Boot service it adds friction — reflection-heavy frameworks need `opens` directives, and the classpath works fine. Most applications should use the classpath and spend the effort on package-private visibility and ArchUnit rules instead, which deliver most of the encapsulation benefit without the build complexity.
 
-If you do modularise: one module per published artifact, `exports` only the API packages, `requires transitive` sparingly, and `opens ... to` the specific framework module rather than `open module`.
+If you do modularize: one module per published artifact, `exports` only the API packages, `requires transitive` sparingly, and `opens ... to` the specific framework module rather than `open module`.
 
 ## Idiom upgrade table
 
