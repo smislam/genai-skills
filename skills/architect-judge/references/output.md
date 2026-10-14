@@ -1,6 +1,6 @@
 # Report template
 
-Lead with the verdict. Keep the language plain and declarative. Drop a section only when it has nothing real in it, never to soften the report. Cite artifact locations as `[§3.2]`, `[diagram: Ingestion flow]`, or `[main.tf:42]`, and criterion IDs from `dimensions.md` as `SEC-5`. Mark unverified external facts **[unverified]**.
+Lead with the verdict. Keep the language plain and declarative. Drop a section only when it has nothing real in it, never to soften the report. Cite artifact locations as `[§3.2]`, `[diagram: Ingestion flow]`, or `[main.tf:42]`, criterion IDs from `dimensions.md` as `DAT-4`, and Well-Architected questions and best practices by their AWS IDs as `REL 9` or `SEC08-BP02`. Mark unverified external facts **[unverified]**.
 
 Do not include author, team, or reviewer names anywhere in the report.
 
@@ -9,7 +9,7 @@ Do not include author, team, or reviewer names anywhere in the report.
 
 ## Verdict: <Approved | Approved with Conditions | Revise and Resubmit | Rejected>
 
-**Overall score: <NN>/100**. <Deciding gate, if any, e.g. "Gate 1 applies: SEC-5 is Critical.">. Confidence: <high | medium | low>.
+**Overall score: <NN>/100**. <Deciding gate, if any, e.g. "Gate 1 applies: SEC 8 is Critical.">. Confidence: <high | medium | low>.
 
 <Two or three sentences: why this status, the single most important issue to fix, and the single most important strength.>
 
@@ -37,6 +37,29 @@ Do not include author, team, or reviewer names anywhere in the report.
 | **Overall** | **100** | | **NN** | |
 
 **Well-Architected pillars:** Security x.x (counted twice) · Operational Excellence x.x · Reliability x.x · Performance Efficiency x.x · Cost Optimization x.x · Sustainability x.x
+
+### Well-Architected risk summary
+
+Framework release: November 6, 2024 · Review depth: <full | design-stage> · Lenses applied: <names, or none>
+
+| Pillar | Questions in scope | High risk | Medium risk | No risk | N/A | Score |
+|---|---|---|---|---|---|---|
+| Operational Excellence | n | n | n | n | n | x.x |
+| Security | n | n | n | n | n | x.x |
+| Reliability | n | n | n | n | n | x.x |
+| Performance Efficiency | n | n | n | n | n | x.x |
+| Cost Optimization | n | n | n | n | n | x.x |
+| Sustainability | n | n | n | n | n | x.x |
+
+<details><summary>Question ratings</summary>
+
+| Question | Risk | Score | Not met (BP IDs) | Evidence |
+|---|---|---|---|---|
+| REL 9 | High | 2.0 | REL09-BP01, REL09-BP04 | [§5.1] RDS snapshots only; S3 `claims-raw` not backed up; no restore test |
+
+</details>
+
+<If design-stage depth: list the operating-model questions marked Not assessed.>
 
 <If weights were rescaled for scope, show the rescaled weights and why.>
 
@@ -85,6 +108,8 @@ Prioritized. Root-cause fixes first, because they close several findings at once
 
 **Improvements (Medium / Low):**
 - <M1: one line, with ID and citation>
+
+**Well-Architected improvement plan:** <every High-risk and Medium-risk question in priority order: question ID, the Not met BPs, the concrete change, and the finding it closes. High-risk questions come first, ordered by blast radius. Questions already covered by a finding above are referenced by finding number, not repeated.>
 
 ## 7. Approval status
 

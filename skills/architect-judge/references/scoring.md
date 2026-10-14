@@ -19,7 +19,7 @@ A score of 4 or 5 requires evidence beyond assertion. "Will be multi-AZ" earns a
 
 ## Dimension score
 
-Dimension score = the mean of its in-scope criterion scores, to one decimal. For Well-Architected, each pillar is scored 0–5 against its checks (the Security pillar is the mean of its `SEC` criteria), and the dimension score is the weighted mean of the in-scope pillars, with Security counted twice (see `dimensions.md` §2).
+Dimension score = the mean of its in-scope criterion scores, to one decimal. Well-Architected is calculated, not judged: each question is scored from its best-practice ratings, each pillar is the mean of its questions, and the dimension is the weighted mean of the pillars, with Security counted twice. The procedure is in `well-architected.md`.
 
 ## Weights and overall score
 
@@ -69,7 +69,7 @@ After the gates, apply the first band that matches:
 | **Revise and Resubmit** | Overall < 75, or a gate blocks a better status, and the approach is fundamentally sound. |
 | **Rejected** | Gate 2 applies, whatever the score. The approach should not proceed in its current form; say what direction would be viable. |
 
-Report the status, the overall score, the gate that decided it (if any), and the band. If a gate overrode the score, say so in the first lines: "Overall 78, but gate 1 applies (SEC-5 Critical): Revise and Resubmit."
+Report the status, the overall score, the gate that decided it (if any), and the band. If a gate overrode the score, say so in the first lines: "Overall 78, but gate 1 applies (SEC 8 Critical: restricted data unencrypted at rest): Revise and Resubmit."
 
 ## Confidence in the verdict
 

@@ -2,7 +2,7 @@
 
 Six dimensions, each with criteria, the standards they are measured against, and the failure signs that most often justify a finding. Criteria are probes, not a form to fill in: score every criterion in scope, but put your words where the evidence bites.
 
-Each criterion has an ID (for example `SEC-3`). Use it in findings so scores and issues cross-reference cleanly.
+Each criterion has an ID (for example `DAT-4`). Well-Architected findings use the AWS question and best-practice IDs (for example `REL 9`, `SEC08-BP02`). Use it in findings so scores and issues cross-reference cleanly.
 
 ## Minimum reviewable content
 
@@ -53,62 +53,11 @@ Standards: ISO/IEC/IEEE 42010:2022 (stakeholders, concerns, viewpoints); TOGAF S
 
 ## 2. AWS Well-Architected (`WA`)
 
-Score each of the six pillars separately (`WA-OPS`, `WA-SEC`, `WA-REL`, `WA-PERF`, `WA-COST`, `WA-SUS`). The dimension score is the weighted mean of the in-scope pillars, with Security counted twice: (2 × SEC + OPS + REL + PERF + COST + SUS) ÷ 7. Security carries the most weight because this is the only place it is scored. Where the artifact names a workload type covered by an official Well-Architected lens (for example Serverless, SaaS, Financial Services, Machine Learning, Data Analytics), apply that lens's additional checks and say so.
+Run the full question-level review in `well-architected.md`, with the questions in one file per pillar (`wa-operational-excellence.md`, `wa-security.md`, `wa-reliability.md`, `wa-performance-efficiency.md`, `wa-cost-optimization.md`, `wa-sustainability.md`). It covers all 57 questions and 307 best practices across the six pillars (`OPS`, `SEC`, `REL`, `PERF`, `COST`, `SUS`), plus any official lens that matches the workload. Each best practice is rated Met, Not met, or N/A, and each question High risk, Medium risk, or No risk. Pillar scores are calculated from those ratings.
 
-Standard: AWS Well-Architected Framework, six pillars. For non-AWS targets, judge the pillar principles and map them to the platform's equivalents.
+Security is judged in depth there, under the Security pillar (SEC 1–11, in `wa-security.md`), with no separate security dimension. It counts twice in the dimension score.
 
-### Operational Excellence (`WA-OPS`) — areas: Organization, Prepare, Operate, Evolve
-- Infrastructure as code; no manual console changes on the deployment path.
-- Deployment strategy is defined: small, reversible changes, blue/green or canary, automated rollback.
-- Observability is designed in: metrics, logs, and traces, with SLOs and alerting tied to them, not just "CloudWatch enabled".
-- Runbooks and playbooks exist for known failure modes; ownership and on-call are defined.
-- Failure signs: no deployment or rollback story; monitoring listed as a tool name with no signals; no owner.
-
-### Security (`WA-SEC`) — areas: Security foundations, Identity and access management, Detection, Infrastructure protection, Data protection, Incident response, Application security
-
-Security is judged in depth under this pillar, using the criteria below. Score the pillar as the mean of the `SEC` criteria in scope.
-
-Supporting standards: NIST CSF 2.0 (Govern, Identify, Protect, Detect, Respond, Recover); NIST SP 800-207 (zero trust); NIST SP 800-53 Rev. 5 control families; OWASP ASVS, OWASP Top 10, and OWASP API Security Top 10 (2023); CIS Benchmarks; SLSA and SBOM practice for supply chain.
-
-| ID | Criterion | Failure signs |
-|---|---|---|
-| SEC-1 | A threat model exists (STRIDE or equivalent) covering the trust boundaries in the inventory, and mitigations map to threats | No threat model; threats listed without mitigations |
-| SEC-2 | Identity and authentication: centralized IdP, MFA for humans, workload identity for services, no long-lived credentials | IAM users with access keys; shared service accounts; API keys as the only service authentication |
-| SEC-3 | Authorization: least privilege, explicit authorization at every trust boundary, object-level checks (BOLA) | Wildcard IAM policies; authorization only at the edge; trusting the caller-supplied tenant ID |
-| SEC-4 | Network protection: segmentation, private connectivity to managed services, controlled ingress and egress, WAF and DDoS protection on public endpoints | Databases in public subnets; unrestricted egress; security groups open to 0.0.0.0/0 |
-| SEC-5 | Data protection: encryption in transit (TLS 1.2+) and at rest, key management stated (KMS, CMKs where required), key rotation and access separation | "Encrypted" with no key ownership; TLS terminated and re-sent in plaintext inside the VPC for sensitive data |
-| SEC-6 | Secrets management: a secrets manager, rotation, no secrets in code, images, or environment files | Credentials in config repos or task definitions |
-| SEC-7 | Application and API security: input validation, output encoding, rate limiting, schema validation, secure defaults | Public APIs with no throttling; no validation strategy |
-| SEC-8 | Multi-tenancy isolation (where applicable): the isolation model is explicit (silo, pool, or bridge) and enforced below the application layer where the risk demands it | Tenant isolation enforced only by a WHERE clause |
-| SEC-9 | Supply chain: dependency scanning, image provenance and signing, SBOM, a pipeline protected from tampering | No scanning; mutable `latest` tags; the pipeline holds admin credentials |
-| SEC-10 | Detection and response: security logging that is centralized, immutable, and retained; alerting routed to a responder; an IR playbook | Logs on local disk; no alert routing; no IR plan |
-| SEC-11 | Security foundations: account and environment separation (for example, multi-account with AWS Organizations and SCPs), guardrails, and a secure baseline applied to every account | Production and non-production in one account; no SCPs or preventive guardrails |
-
-Severity guidance: an exploitable path to restricted data, a missing authorization check at a trust boundary, or credentials exposed on the deployment path is **Critical**.
-
-### Reliability (`WA-REL`) — areas: Foundations, Workload architecture, Change management, Failure management
-- Quotas and limits are considered; network topology has capacity headroom (IP space, NAT, cross-AZ).
-- No single points of failure: multi-AZ at minimum for production, with multi-region justified by RTO/RPO either way.
-- Dependencies fail gracefully: timeouts, retries with backoff and jitter, circuit breakers, bulkheads, idempotency for retried writes.
-- Backup and restore are defined *and tested*; RTO/RPO stated, with a DR strategy matched to them (backup/restore, pilot light, warm standby, multi-site active-active).
-- Failure signs: synchronous call chains across many services; retries without idempotency; DR as "TBD"; backups never restored.
-
-### Performance Efficiency (`WA-PERF`) — areas: Architecture selection, Compute and hardware, Data management, Networking and content delivery, Process and culture
-- Compute, storage, and database choices are justified against the access pattern and load profile, not defaulted.
-- Caching, CDN, and data placement are matched to latency requirements.
-- Scaling is defined: what scales, on what signal, with limits.
-- Performance is verified by load testing against the stated NFRs.
-
-### Cost Optimization (`WA-COST`) — areas: Practice cloud financial management, Expenditure and usage awareness, Cost-effective resources, Manage demand and supply resources, Optimize over time
-- A cost estimate or envelope exists and is tied to the load profile.
-- Tagging and cost allocation by owner, environment, and workload.
-- Pricing model fit: on-demand vs Savings Plans or Reserved Instances vs Spot; serverless vs provisioned, justified.
-- Hidden costs are addressed: data transfer (cross-AZ, cross-region, NAT gateway processing), log volume, idle non-production environments.
-
-### Sustainability (`WA-SUS`) — areas: Region selection, Alignment to demand, Software and architecture, Data, Hardware and services, Process and culture
-- Resources scale to demand, including to zero where viable; no always-on idle capacity without reason.
-- Data lifecycle policies that delete or tier data nobody reads.
-- Efficient hardware choices where applicable (for example Graviton), and managed services over self-run fleets.
+Standard: AWS Well-Architected Framework (November 6, 2024 release). For non-AWS targets, judge the pillar principles and best-practice intent, and map them to the platform's equivalents.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: architect-judge
-description: Act as an independent, blind architecture review board. Judge an architecture artifact (solution or system design, reference architecture, design pattern, trade-off analysis, cloud or migration strategy, ADR, diagram set, or infrastructure-as-code) strictly on what it contains. Score it across six dimensions: Architecture Alignment, AWS Well-Architected (all six pillars, with security judged in depth under the Security pillar), Architecture Quality, Data Management, Architecture Governance, and Compliance. Deliver an initial assessment, evidence-backed findings, strengths, critical issues and gaps, concrete remediations, and a final approval status. Use this skill whenever someone asks to review, validate, assess, audit, score, grade, approve, or sign off on an architecture, design, pattern, or technical strategy, or wants an "architecture review board", "ARB", "design authority", "Well-Architected review", "architecture gate", "readiness review", or "is this design production-ready". Architecture only: not for general idea or business-plan validation, and not for line-level code review of a diff.
+description: Act as an independent, blind architecture review board. Judge an architecture artifact (solution or system design, reference architecture, design pattern, trade-off analysis, cloud or migration strategy, ADR, diagram set, or infrastructure-as-code) strictly on what it contains. Score it across six dimensions: Architecture Alignment, AWS Well-Architected (a full question-level review of all six pillars and matching lenses, with security judged in depth under the Security pillar), Architecture Quality, Data Management, Architecture Governance, and Compliance. Deliver an initial assessment, evidence-backed findings, strengths, critical issues and gaps, concrete remediations, and a final approval status. Use this skill whenever someone asks to review, validate, assess, audit, score, grade, approve, or sign off on an architecture, design, pattern, or technical strategy, or wants an "architecture review board", "ARB", "design authority", "Well-Architected review", "architecture gate", "readiness review", or "is this design production-ready". Architecture only: not for general idea or business-plan validation, and not for line-level code review of a diff.
 ---
 
 # Architect Judge
@@ -26,7 +26,7 @@ These are non-negotiable. They are what make the verdict worth having.
 
 Rule 1 and rule 2 mean the judge must not carry context the artifact doesn't contain.
 
-- **If you can run subagents and this conversation contains anything about the architecture beyond the artifact itself** (you helped design it, the user explained intent, earlier turns discussed constraints), run the review in a **fresh subagent**. Pass only the artifact (its text or file paths), the declared scope, and the instruction to follow this skill and its `references/`. Pass no conversation history, author or team identity, rationale given verbally, or your own opinion of the design. Then relay its report unchanged, apart from formatting.
+- **If you can run subagents and this conversation contains anything about the architecture beyond the artifact itself** (you helped design it, the user explained intent, earlier turns discussed constraints), run the review in a **fresh subagent**. Settle the scope and the Well-Architected depth with the requester first, because the subagent can't ask. Pass only the artifact (its text or file paths), the declared scope and depth, and the instruction to follow this skill and its `references/`. Pass no conversation history, author or team identity, rationale given verbally, or your own opinion of the design. Then relay its report unchanged, apart from formatting.
 - **If you can't**, state at the top of the report that the review was performed in a session with prior context, and judge from the artifact alone anyway: anything you know only from the conversation is treated as absent.
 - **Before reviewing,** strip author names, reviewer names, approval signatures, and change-log identities from what you evaluate. Version and date stay, because they matter for governance.
 
@@ -40,6 +40,7 @@ Before scoring anything, establish and report:
 - **Scope** — what is being judged and what isn't. Use the scope the requester declares (for example "security and compliance only", or "the ingestion subsystem"). Otherwise infer it from the artifact and state it. Scope narrows *what* is judged, never *how strictly*.
 - **Stated intent** — the business goals, requirements, and constraints the artifact itself claims. Quote or cite them; these are what Alignment is judged against.
 - **System profile** — workload type, deployment target (AWS, other cloud, hybrid, on-prem), data classes handled, user population, and geography, *as stated*. This profile decides which compliance regimes and Well-Architected lenses apply.
+- **Well-Architected depth** — a full review of every question is the default. If the artifact doesn't cover the operating model, ask the requester once whether they want a design-stage review instead (see `references/well-architected.md`); with no answer, keep the full review. Also list the lenses that will be applied.
 - **Review readiness** — is the artifact complete enough to judge? Score readiness against the minimum content in `references/dimensions.md` ("Minimum reviewable content"). An artifact missing most of it is still judged, and it fails on the gaps. Say early that the low scores are driven by absence, not by bad decisions.
 - **First read** — two or three sentences: the overall shape of the design and your initial read of where the risk concentrates. This is an orientation, not the verdict.
 
@@ -49,7 +50,7 @@ From the artifact alone, list the components, external dependencies, data stores
 
 ### 3. Evaluate each dimension
 
-Read `references/dimensions.md`. For each of the six dimensions, evaluate every criterion that falls within scope. For each criterion, record:
+Read `references/dimensions.md`. For each of the six dimensions, evaluate every criterion that falls within scope. For AWS Well-Architected, follow `references/well-architected.md` and its six pillar files (`references/wa-*.md`): rate every best practice and every question, then calculate the pillar scores. For each criterion, record:
 
 - **Evidence**: the artifact location, or "not addressed".
 - **Assessment**: what is right or wrong, measured against the named standard or principle.
@@ -57,7 +58,7 @@ Read `references/dimensions.md`. For each of the six dimensions, evaluate every 
 
 Adapt the criteria to the artifact type using the table in `references/dimensions.md`. A migration strategy isn't expected to specify subnet layouts, but it is expected to address data migration, cutover risk, and rollback.
 
-**Independent dimension reviewers (large artifacts, when you can run subagents).** For an artifact too large to hold in full attention, give each of two to four fresh subagents the artifact plus a subset of the dimensions and their section of `references/dimensions.md`. Then merge their results: deduplicate, resolve conflicting severities from the evidence (not by vote), and check every Critical finding yourself before it stands.
+**Independent dimension reviewers (large artifacts, when you can run subagents).** For an artifact too large to hold in full attention, give each of two to four fresh subagents the artifact plus a subset of the dimensions and their section of `references/dimensions.md`. The Well-Architected review is the largest part, so it splits well by pillar: give each subagent `references/well-architected.md` plus only its pillars' `references/wa-*.md` files. Then merge their results: deduplicate, resolve conflicting severities from the evidence (not by vote), and check every Critical finding yourself before it stands.
 
 ### 4. Score
 
