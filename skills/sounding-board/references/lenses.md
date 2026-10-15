@@ -7,6 +7,7 @@ Each lens lists the questions worth asking, the ways this kind of idea usually d
 ## Contents
 - [Universal probes](#universal-probes)
 - [Product and startup](#product-and-startup)
+- [Technical and architecture](#technical-and-architecture)
 - [Engineering and coding](#engineering-and-coding)
 - [Organizational and process](#organizational-and-process)
 - [Personal and career](#personal-and-career)
@@ -37,6 +38,25 @@ Each lens lists the questions worth asking, the ways this kind of idea usually d
 **Usual killers**: no urgent pain; a free or "good enough" alternative; no distribution channel; acquisition cost above lifetime value; a market too small to support the founder's goals; dependency on a platform that can change its rules.
 
 **Worth checking**: existing competitors and their pricing; how similar startups fared; market size from a credible source; platform terms the idea depends on (app store, API, marketplace policies); regulation in the target industry.
+
+## Technical and architecture
+
+For architecture ideas at the thinking stage, before there is a design to review: a move to microservices or events, a new datastore, a platform migration, a build-or-buy choice.
+
+**Questions**
+- What problem does this design solve that the current one doesn't, and is that problem measured or assumed? "It won't scale" needs numbers: current load, growth rate, where it breaks.
+- What are the failure modes? What happens when each dependency is slow, down, or returns garbage? Where is the single point of failure?
+- For reliability mechanisms (retries, timeouts, circuit breakers, queues, caches), how do they interact? Retries stacked across layers multiply. A retry schedule longer than the caller's deadline is wasted work. A retry that fires against an open breaker defeats it. A retried write that isn't idempotent, or that regenerates its idempotency key on each attempt, is a duplicate.
+- What does the data model do over its whole life, not just at launch? Think about growth two or three years out, deletion requests (tenant offboarding, privacy law), backfills, and schema changes.
+- What does it cost to run — infrastructure, on-call load, and the operational expertise the team needs and may not have?
+- What does it do to the team? More services, more repositories, and more deploy pipelines all need owners. Distributed systems trade code complexity for operational complexity.
+- How does data move, and where does consistency matter? Many designs are elegant until two services need to agree on the same record.
+- What is the migration path from today, and can it be done incrementally? A design that needs a big-bang cutover carries the risk of the cutover.
+- Is there a boring alternative — a bigger instance, an index, a cache, a queue — that gets most of the benefit?
+
+**Usual killers**: solving a scale problem that doesn't exist; operational load beyond the team's capacity; distributed consistency underestimated; a migration plan that is really a rewrite; picking a technology for its novelty; vendor lock-in that wasn't priced.
+
+**Worth checking**: the current system's actual metrics if available; vendor pricing and limits; the documented guarantees of the chosen technology (consistency model, throughput limits, quotas); known production issues with it; the existing codebase and infrastructure configuration.
 
 ## Engineering and coding
 

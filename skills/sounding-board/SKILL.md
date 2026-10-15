@@ -1,9 +1,9 @@
 ---
-name: second-opinion
-description: Give an honest, rigorous second opinion on an idea, plan, proposal, or decision — make the strongest case for it, find what would actually sink it, check claims instead of guessing, and give a clear call that backs a sound idea as firmly as it rejects a broken one, plus the cheapest test for what's unknown. Use when someone wants to validate, challenge, sanity-check, or poke holes in something they are considering — a startup or product idea, a refactor or library choice, a process or org change, a career or personal move. Trigger on "is this a good idea", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "be brutally honest", "talk me out of it", "would this work", "should I…", "review my plan/pitch/proposal", or a shared plan with a request for feedback, even without the word "critique". Not for architecture or system-design reviews, proofreading, line-level code review, or generating ideas from scratch.
+name: sounding-board
+description: Be an honest, rigorous sounding board for an idea, plan, proposal, or decision at any stage, including work not yet started — give a second opinion that makes the strongest case for it, finds what would actually sink it, checks claims instead of guessing, and ends with a clear call that backs a sound idea as firmly as it rejects a broken one, plus the cheapest test for what's unknown. Use when someone wants to validate, challenge, sanity-check, or poke holes in something they are considering — a startup or product idea, an early architecture or system-design idea, a refactor or library choice, a process or org change, a career or personal move. Trigger on "is this a good idea", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "be brutally honest", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
 ---
 
-# Second Opinion
+# Sounding Board
 
 ## What this skill is for
 
@@ -31,7 +31,7 @@ Depth of *thinking* and length of *presentation* are separate choices. Make them
 **Then choose how much to show:**
 
 - **Quick take** — the ask is casual and the downside is modest and reversible: a career question, a side project, a process tweak. One screen of plain prose: the call, the top problems, the one test that matters most, the assumptions to confirm.
-- **Full review** — any of these is true: real money is at stake (savings, funding, a large budget); the decision is hard to reverse (quitting a job, a rewrite, a reorg, a long contract); it consumes months of team time; the user shares a document or plan; or they ask for depth. The full structure is appropriate, but still lead with plain sentences, not tables.
+- **Full review** — any of these is true: real money is at stake (savings, funding, a large budget); the decision is hard to reverse (quitting a job, a rewrite, a datastore or platform choice, a reorg, a long contract); it consumes months of team time; the user shares a document or plan; or they ask for depth. The full structure is appropriate, but still lead with plain sentences, not tables.
 
 Choose by stakes, not by how long the message is. "Poke holes in this" about quitting a job to start a company gets a full review even in three sentences.
 
@@ -46,7 +46,7 @@ Say which you chose in one line and offer the other.
 Restate the idea in one sentence, in your words. Then name:
 
 - **The decision on the table** — go/no-go, which of several options, how much to invest, or whether to keep going with something already underway. Critique serves a decision; if there isn't one, find out what it is.
-- **The idea type** — product/startup, engineering/coding, organizational/process, or personal/career. Reviewing an architecture or system design is out of scope. Mixed ideas take lenses from more than one.
+- **The idea type** — product/startup, technical/architecture, engineering/coding, organizational/process, or personal/career. Mixed ideas take lenses from more than one. Architecture ideas are in scope while they are still ideas: a direction, an option being weighed, an early sketch. Formally scoring or approving a finished design document is not this skill's job.
 - **What success means to the user** — their goal, not a generic one. A side project that only needs to cover its own hosting costs is not a failed startup.
 
 Ask a clarifying question only when the answer would change your verdict — at most two, and only up front. Otherwise proceed, but **make every assumption visible and ask the user to verify it**. A review built on a silent assumption the user would have corrected in five seconds is wasted, and the user cannot correct what they cannot see.

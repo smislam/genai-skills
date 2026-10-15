@@ -38,14 +38,14 @@ Score from evidence, not optimism. If a dimension rests on [unknown] beliefs, sc
 
 ## How the dimensions read by idea type
 
-| Dimension | Product/startup | Engineering/coding | Organizational/process | Personal/career |
-|---|---|---|---|---|
-| Problem | Customer pain | Measured code cost | Pain felt by the people doing the work | The real goal underneath |
-| Fit | Better than the workaround | Lowers the cost | Changes the outcome, not just the ritual | Actually serves that goal |
-| Feasibility | Build + reach customers | Team can finish it incrementally | Adoption is achievable | Skills, money, and time available |
-| Edge | Moat, timing, access | Beats leaving it alone | Beats the current process | Beats cheaper routes to the same goal |
-| Downside | Money and time burned | Half-finished migration, regressions | Overhead and lost trust | Runway, reversibility, dependents |
-| Evidence | Customer behavior, not opinions | Coverage, profiling, spikes | Pilot results, baselines | Conversations with people who did it |
+| Dimension | Product/startup | Technical/architecture | Engineering/coding | Organizational/process | Personal/career |
+|---|---|---|---|---|---|
+| Problem | Customer pain | Measured system limit | Measured code cost | Pain felt by the people doing the work | The real goal underneath |
+| Fit | Better than the workaround | Removes the limit | Lowers the cost | Changes the outcome, not just the ritual | Actually serves that goal |
+| Feasibility | Build + reach customers | Team can build *and run* it | Team can finish it incrementally | Adoption is achievable | Skills, money, and time available |
+| Edge | Moat, timing, access | Beats the boring alternative | Beats leaving it alone | Beats the current process | Beats cheaper routes to the same goal |
+| Downside | Money and time burned | Outage, lock-in, migration risk | Half-finished migration, regressions | Overhead and lost trust | Runway, reversibility, dependents |
+| Evidence | Customer behavior, not opinions | Metrics, load tests, prototypes | Coverage, profiling, spikes | Pilot results, baselines | Conversations with people who did it |
 
 ## Decision rules
 
