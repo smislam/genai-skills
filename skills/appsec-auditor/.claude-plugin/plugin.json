@@ -1,0 +1,9 @@
+{
+  "name": "appsec-auditor",
+  "description": "Application security audit skill with guardrail hooks that stay inert unless an audit is running.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Shafiq Islam"
+  },
+  "license": "MIT"
+}
