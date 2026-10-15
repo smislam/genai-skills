@@ -1,6 +1,6 @@
 # Triage, verification, and severity
 
-Scanner output and first-pass AI observations are **candidates**, not findings. A candidate becomes a finding only after it passes verification. This file is what keeps the report trustworthy. Scanners are noisy: OWASP notes "high numbers of false positives". AI review alone is unreliable, close to random on hard benchmarks in peer-reviewed studies. The combination works only when every finding is proven against the code.
+Search-pattern hits, first-pass AI observations, and the output of any already-installed scanner are **candidates**, not findings. A candidate becomes a finding only after it passes verification. This file is what keeps an AI-led audit trustworthy. AI review is unreliable when it isn't checked: it's close to random on hard benchmarks in peer-reviewed studies, and it can be argued out of a finding. Pattern matches and scanners, for their part, are noisy (OWASP notes "high numbers of false positives"). Only a finding proven against the code goes in the report.
 
 ## 1. Verify each candidate
 
@@ -26,11 +26,11 @@ Record all of the following. If you can't fill one in, the candidate isn't verif
 | **Needs review** | A suspicious pattern whose path couldn't be traced, or that depends on code outside the scanned scope. | A short "Needs human review" list, not findings |
 | **False positive** | Disproved. | The triage log only, with the reason |
 
-Never upgrade confidence because a tool flagged something, or because two tools agree on the same unverified pattern.
+Never upgrade confidence because a pattern or tool flagged something, or because two sources agree on the same unverified pattern.
 
 ## 3. Common false-positive patterns
 
-Check for these before keeping a scanner result:
+Check for these before keeping a candidate:
 
 - **Parameterized queries flagged as SQL injection** because string concatenation builds only the static SQL text, such as column names from an allow-list.
 - **Framework auto-escaping:** React JSX, Razor, Jinja2 with autoescape, Thymeleaf `th:text`. These are XSS findings only when the code uses an escape hatch (`dangerouslySetInnerHTML`, `@Html.Raw`, `|safe`, `th:utext`).
@@ -55,6 +55,8 @@ Rate **impact** and **exploitability**, then read the severity from the matrix:
 | **Moderate**: limited data exposure; reflected XSS; denial of service of one component; CSRF on a non-critical action | Medium | Medium | Low | Low |
 | **Minor**: information leakage with no direct use; hardening gaps | Low | Low | Info | Info |
 
+**Sample, demo, and internal-only code.** Rate by the matrix, not by how the code is described. A README saying "sample app" or "internal tool" doesn't change what an attacker can do if it's deployed. Record the context in the finding ("the repository describes itself as a sample application"), so the reader can weigh it. This keeps severities comparable between runs and repositories.
+
 Give an **estimated CVSS v4.0 base vector** for each Critical and High finding. Label it "CVSS-B (estimated)" so nobody mistakes it for an authoritative score. The matrix decides the severity; the vector supports it.
 
 ### Dependency findings
@@ -62,7 +64,7 @@ Give an **estimated CVSS v4.0 base vector** for each Critical and High finding. 
 Rank in this order, and let each step move severity:
 
 1. **CISA KEV listed:** at least **High**, and **Critical** if reachable.
-2. **Reachability:** if a tool shows the vulnerable symbol isn't called (govulncheck "informational", OSV-Scanner "unexecuted"), lower it one level and say so.
+2. **Reachability:** if the library is used but its vulnerable part isn't (`dependencies.md`, "Deciding dependency items", with what you searched for), or an installed tool shows the vulnerable symbol isn't called (govulncheck "informational"), lower it one level and say so. If the vulnerable component is absent altogether, it's a false positive, not a lowered finding.
 3. **EPSS:** a high percentile (the top 10%) raises a Medium to High.
 4. **CVSS:** the advisory's score sets the starting level when there's no KEV, reachability, or EPSS signal.
 

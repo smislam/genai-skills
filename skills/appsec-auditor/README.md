@@ -1,35 +1,30 @@
 # appsec-auditor
 
-An Agent Skill for Claude Code that audits application code for security vulnerabilities the way an AppSec engineer would. It runs free local scanners (SAST, dependencies, secrets, IaC and containers), verifies every result against the code, reviews what scanners miss (authorization, business logic, crypto, CI/CD, LLM and agent code), and analyzes how findings chain into real exploits. Findings map to CWE, OWASP Top 10 (2025), CWE Top 25 (2025), and ASVS 5.0. Dependencies are ranked against the live CISA KEV catalog, reachability, EPSS, and CVSS. It also flags dependency license risk and performance problems, in separate report sections. Output is a Markdown report, a SARIF 2.1.0 file, optional GitLab security reports, and proposed fixes as diffs.
+An Agent Skill for Claude Code that audits a **whole repository** for security vulnerabilities the way an AppSec engineer would, with **nothing to install** and **deterministic coverage**. The AI does the review:
+- it maps the attack surface;
+- it walks every entry point through to its sinks (injection, authorization, authentication, business logic, crypto, CI/CD, IaC, containers, LLM and agent code);
+- it searches the code and git history for leaked secrets;
+- it checks every dependency against live vulnerability data from OSV.dev and the CISA KEV catalog;
+- it analyzes how findings chain into real exploits.
+
+Scripts build a fixed checklist from the repository, the AI must decide every item on it, and a hook won't let the audit finish until it has. Every finding is proven against the code before it's reported. Findings map to CWE, OWASP Top 10 (2025), CWE Top 25 (2025), and ASVS 5.0. License risk and performance problems are reported in separate sections. Output is a Markdown report, a SARIF 2.1.0 file, optional GitLab security reports, and proposed fixes as diffs.
 
 This README is for people setting the skill up. The agent's instructions are in `SKILL.md` and `references/`.
 
-> **The skill is only as thorough as the tools installed.** Before every audit it checks which scanners are present and uses every installed tool that fits your stack. For each missing tool it asks you to choose:
-> - **I'll install it myself.** It shows the pinned command below and waits.
-> - **Install it for me.** It installs the pinned version and verifies it, after your approval.
-> - **Skip it.** AI review covers that category instead.
->
-> Declining, not answering, or a failed install all count as "skip". The audit never stops for a missing tool, and the report says where coverage is reduced. For the best results, install at least the **core** tools plus the ones for your stacks.
+## When to use it, and when to use `/security-review`
 
-## Contents
+| | `/security-review` (built into Claude Code) | `appsec-auditor` |
+|---|---|---|
+| Scope | The pending changes on your current branch | The whole repository as it stands |
+| Use it for | A security check before you merge a change | A full audit: before a release, of an inherited codebase, or periodically |
+| Covers | The new code | Code, dependencies (live CVE and KEV data), secrets in git history, IaC, containers, CI/CD, exploit chains, licenses, performance |
+| Output | Findings in the conversation | Report, SARIF, GitLab reports, proposed fixes |
 
-- [Install the skill](#install-the-skill)
-- [Dependencies](#dependencies)
-  - [Required for every audit](#required-for-every-audit)
-  - [Core scanners](#core-scanners)
-  - [Stack-specific scanners](#stack-specific-scanners)
-  - [Install commands](#install-commands)
-  - [Verify what you downloaded](#verify-what-you-downloaded)
-- [Check your setup](#check-your-setup)
-- [Guardrail hooks](#guardrail-hooks)
-- [Network access and data sent](#network-access-and-data-sent)
-- [Output](#output)
-- [Validate the skill](#validate-the-skill)
-- [Limitations](#limitations)
+Ask `appsec-auditor` to review only your branch's changes, and it points you to `/security-review`.
 
 ## Install the skill
 
-Copy the whole folder, not just `SKILL.md`. The hooks, scripts, and references are part of the skill.
+Copy the whole folder, not just `SKILL.md`. The scripts, references, and optional guardrail hooks are part of the skill.
 
 ```bash
 # For you, in every project
@@ -45,301 +40,121 @@ On Windows PowerShell:
 Copy-Item -Recurse skills\appsec-auditor "$HOME\.claude\skills\"
 ```
 
-The folder contains `.claude-plugin/plugin.json`, so Claude Code loads it both as the skill `/appsec-auditor` and as the plugin `appsec-auditor@skills-dir`, which carries the guardrail hooks. Run `/reload-plugins`, or start a new session, to load it. A copy under a project's `.claude/skills/` loads only after you accept the workspace trust dialog for that folder, and only when the session starts at the repository root.
+Run `/reload-plugins`, or start a new session. Then ask for an audit ("run a full security audit of this repository"), or invoke it directly with `/appsec-auditor`.
 
-## Dependencies
+The folder also contains `.claude-plugin/plugin.json`, so Claude Code loads it as the plugin `appsec-auditor@skills-dir`, which carries the optional guardrail hooks. A copy under a project's `.claude/skills/` loads only after you accept the workspace trust dialog for that folder.
 
-Versions below were the latest stable releases, verified on **2026-10-15**. Pin to these, or to a newer release that you verify the same way. Each tool's license is listed so you can check it against your organization's policy.
+## Requirements
 
-### Required for every audit
+**Nothing is installed by the skill, or for it.** It needs:
 
-| Dependency | Why | Version | License |
-|---|---|---|---|
-| **Claude Code** | Runs the skill, and loads its folder as a plugin for the hooks | Current release | — |
-| **Node.js** | Runs the guardrail hook (`hooks/guard.js`) and parses the KEV catalog | 18 or later | MIT |
-| **git** | Secret scanning of history; diff-mode audits | Any current | GPL-2.0 |
-| **curl** (macOS, Linux, Git Bash) or **PowerShell** (Windows) | Downloads the CISA KEV catalog on every run | Any current | — |
-| **Network access** to `www.cisa.gov`, `api.first.org`, and `api.osv.dev` | Current KEV, EPSS, and vulnerability data. Without it, dependency results are flagged as unverified | — | — |
+| Requirement | Used for |
+|---|---|
+| Claude Code | Running the skill and its hooks |
+| **Node.js 18 or later** | The checklist scripts, the guardrail hooks, and the coverage gate (standard library only, with no npm packages) |
+| `git` | The file list, and secrets in git history |
+| `curl` | All network calls, including through corporate proxies. Ships with macOS, Linux, Git Bash, and Windows 10+ |
+| Network access to `api.osv.dev`, `www.cisa.gov`, `api.first.org`, and `repo1.maven.org`, directly, through a proxy, or through internal mirrors | Live vulnerability data. Without it, the report marks dependency results **not checked** instead of calling them clean |
 
-### Core scanners
+Without Node.js, the audit still runs by instruction alone, but nothing enforces the coverage, and the report is labeled **non-deterministic**.
 
-Install these for every repository.
+**Optional, if already present:** security scanners you already have (Semgrep, Gitleaks, OSV-Scanner, Trivy, Checkov, and others). The skill runs them as an extra source of candidates and verifies their results like everything else. It never asks you to install one. See `references/tools.md`.
 
-| Category | Tool | Version | License | Notes |
-|---|---|---|---|---|
-| SAST (multi-language) | **Opengrep** | v1.31.0 | LGPL-2.1 | Open fork of Semgrep with cross-function taint. Has no built-in rules: clone `opengrep/opengrep-rules` at a pinned commit, or use your own rules |
-| | *or* **Semgrep CE** | 1.181.0 | LGPL-2.1 engine; Registry rules are internal-use only | Run with `--config p/default --metrics off`. Windows support is beta |
-| Dependencies | **OSV-Scanner** | v2.7.0 | Apache-2.0 | Queries OSV.dev live |
-| Secrets | **Gitleaks** | v8.30.1 | MIT | Security patches only from now on |
-| | *or* **Betterleaks** | v1.9.0 | MIT | Gitleaks' successor. Stay on v1.x: v2 drops SARIF output |
-| Download verification | **cosign** | Current | Apache-2.0 | Verifies signatures of Opengrep, Trivy, Grype, Syft, and TruffleHog |
-
-### Stack-specific scanners
-
-| Stack | Tool | Version | License | Notes |
-|---|---|---|---|---|
-| Python | Bandit (with `sarif` extra) | 1.9.4 | Apache-2.0 | Needs Python 3.10+ |
-| | pip-audit | 2.10.1 | Apache-2.0 | |
-| Java / Kotlin | SpotBugs | 4.10.5 | LGPL-2.1 | Needs compiled classes and Java |
-| | Find Security Bugs plugin | 1.14.0 | LGPL-3.0 | `findsecbugs-plugin-1.14.0.jar` from Maven Central |
-| | PMD | 7.28.0 | BSD-style | Needs Java 8+ |
-| JavaScript / TypeScript | ESLint | 10.12.0 | MIT | Node ^20.19, ^22.13, or >=24 |
-| | eslint-plugin-security | 4.2.0 | Apache-2.0 | Noisy; the skill triages its output |
-| | npm (for `npm audit`) | Bundled with Node | Artistic-2.0 | Needs a lockfile |
-| C# / .NET | DevSkim | 1.0.100 | MIT | .NET SDK 10+; installed as a `dotnet tool` |
-| | .NET SDK | 9 or 10 | MIT | For `dotnet list package --vulnerable` |
-| Go | gosec | v2.29.0 | Apache-2.0 | Needs Go 1.25+ |
-| | govulncheck | v1.9.0 | BSD-3-Clause | Reports whether vulnerable code is actually called |
-| Rust | cargo-audit | 0.22.2 | Apache-2.0 OR MIT | Rust 1.88+ |
-| | cargo-deny | 0.20.2 | MIT OR Apache-2.0 | |
-| | Clippy | Ships with rustup | MIT OR Apache-2.0 | Compiles the crate, so the skill asks first |
-| Terraform | Checkov | 3.3.29 | Apache-2.0 | Default for Terraform; also covers Kubernetes, Helm, Dockerfiles, CloudFormation, and CI pipelines |
-| | TFLint + AWS ruleset (optional) | v0.64.0 / v0.49.0 | MPL-2.0; release binaries also BUSL-1.1 | `--init` downloads plugins |
-| AWS CDK | Checkov (on `cdk.out`) | 3.3.29 | Apache-2.0 | Needs an approved `cdk synth`. The skill recommends **cdk-nag 3.0.2** (Apache-2.0) for the team to add to the app; it doesn't run it |
-| Containers | Trivy | **v0.76.0 or later** | Apache-2.0 | See the security warning below |
-| | Hadolint | v2.15.1 | GPL-3.0 | Dockerfiles |
-| Kubernetes | kube-linter | v0.8.3 | Apache-2.0 | |
-| SBOM | Syft | v1.54.1 | Apache-2.0 | |
-| Cross-check (optional) | Grype | v0.120.1 | Apache-2.0 | Shows EPSS and KEV natively |
-| Secrets (optional) | TruffleHog | v3.99.2 | **AGPL-3.0** | The skill always runs it with `--no-verification` unless you opt in |
-| C / C++ (generic coverage) | cppcheck | 2.22.0 | GPL-3.0-or-later | |
-| | Flawfinder | 2.0.20 | GPL-2.0+ | |
-
-> **Trivy security warning.** Trivy's release pipeline was compromised in March 2026 (advisory GHSA-69fq-xp46-6x23). The malicious artifacts were v0.69.4 (binaries, packages, and images), Docker Hub images 0.69.5 and 0.69.6, and hijacked `trivy-action` and `setup-trivy` tags. Install v0.76.0 or later, verify it with cosign (below), reference container images by digest, and pin GitHub Actions to a full commit SHA.
-
-**Don't install these:** Terrascan (archived), standalone tfsec (now part of Trivy), Horusec (abandoned), and Security Code Scan for .NET (stale). CodeQL can't be used on private code without a paid GitHub Code Security license.
-
-### Install commands
-
-Pin a version in every method below. Homebrew can't install an exact older version (`brew pin` only stops upgrades), and some formulas lag behind releases. When you need an exact version, use pipx, npm, `go install`, `cargo install`, or a verified release binary.
-
-**Python tools** (all platforms; use [pipx](https://pipx.pypa.io/) or `uv tool`):
+Check what's present:
 
 ```bash
-pipx install semgrep==1.181.0
-pipx install "bandit[sarif]==1.9.4"
-pipx install pip-audit==2.10.1
-pipx install checkov==3.3.29
-pipx install flawfinder==2.0.20
-```
-
-On Windows, set `PYTHONUTF8=1` before running Semgrep.
-
-**Go tools** (all platforms; needs Go):
-
-```bash
-go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.0   # needs Go 1.26.2+
-go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0            # needs Go 1.25+
-go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
-go install github.com/zricethezav/gitleaks/v8@v8.30.1
-go install github.com/terraform-linters/tflint@v0.64.0
-go install golang.stackrox.io/kube-linter/cmd/kube-linter@v0.8.3
-```
-
-`go install` verifies modules against the Go checksum database automatically.
-
-**Rust tools:**
-
-```bash
-cargo install --locked cargo-audit@0.22.2
-cargo install --locked cargo-deny@0.20.2
-```
-
-**Node tools** (install into the project being audited, as dev dependencies; the skill asks first, because installing runs package scripts):
-
-```bash
-npm i -D --save-exact eslint@10.12.0 eslint-plugin-security@4.2.0
-npm audit signatures   # checks registry signatures and provenance
-```
-
-**.NET tools:**
-
-```bash
-dotnet tool install --global Microsoft.CST.DevSkim.CLI --version 1.0.100
-```
-
-**Opengrep.** Download the installer, read it, then run it with signature verification:
-
-```bash
-curl -fsSLo opengrep-install.sh https://raw.githubusercontent.com/opengrep/opengrep/main/install.sh
-less opengrep-install.sh
-bash opengrep-install.sh -v v1.31.0 --verify-signatures
+bash ~/.claude/skills/appsec-auditor/scripts/check-tools.sh
 ```
 
 ```powershell
-Invoke-WebRequest https://raw.githubusercontent.com/opengrep/opengrep/main/install.ps1 -OutFile opengrep-install.ps1
-Get-Content opengrep-install.ps1    # read it first
-.\opengrep-install.ps1 -Version v1.31.0
+powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.claude\skills\appsec-auditor\scripts\check-tools.ps1"
 ```
 
-On Windows, keep `opengrep.exe` in the same folder as its DLLs. Then fetch rules at a pinned commit, for example `git clone https://github.com/opengrep/opengrep-rules && git -C opengrep-rules checkout <commit>`.
+## Corporate proxies and firewalls
 
-**Trivy, Grype, Syft, TruffleHog, Hadolint, and other release binaries.** Prefer downloading the release archive and verifying it (next section) over install scripts. Where you use the vendors' install scripts, download and read them first; never pipe them straight into a shell:
+Every network call goes through `curl`, so standard proxy settings work. Test them:
 
 ```bash
-curl -fsSLo grype-install.sh https://get.anchore.io/grype
-less grype-install.sh
-sh grype-install.sh -b /usr/local/bin -v v0.120.1     # -v makes the script verify with cosign
+node ~/.claude/skills/appsec-auditor/scripts/net-check.js
 ```
 
-**Windows package managers** (when you don't need an exact older version):
+It tests each endpoint and names the problem when one fails. Set these in the environment Claude Code runs in, or in Claude Code's `env` settings:
 
-| Tool | winget | Scoop |
-|---|---|---|
-| Trivy | Find the ID with `winget search trivy`, then `winget install -e --id <id> --version 0.76.0` | `scoop install trivy` |
-| OSV-Scanner | `winget install -e --id Google.OSVScanner` (lags: 2.6.0) | `scoop install osv-scanner` |
-| Grype | `winget install -e --id Anchore.Grype` | `scoop install grype` |
-| Syft | `winget install -e --id Anchore.syft` | `scoop install syft` |
-| Gitleaks | `winget install -e --id Gitleaks.Gitleaks` | `scoop install gitleaks` |
-| Betterleaks | `winget install -e --id Betterleaks.Betterleaks` | — |
-| TFLint | `winget install -e --id TerraformLinters.tflint` | `scoop install tflint` |
-| Hadolint | — | `scoop install hadolint` |
-| cppcheck | `winget install -e --id Cppcheck.Cppcheck` | `scoop install cppcheck` |
+| Situation | Setting |
+|---|---|
+| A proxy is required | `HTTPS_PROXY=http://proxy.corp.example:8080` (and `NO_PROXY` for exceptions), or `APPSEC_PROXY` to set it for this skill only |
+| The proxy authenticates with your Windows login (NTLM/Kerberos) | `APPSEC_PROXY_AUTH=negotiate` (or `ntlm`). curl uses the logged-in user's credentials; no password is stored |
+| The proxy uses a username and password | `APPSEC_PROXY_AUTH=basic`, with `http://user:password@proxy:port` as the proxy. Credentials are never printed or written to reports |
+| TLS inspection (the corporate CA re-signs traffic) | Works automatically on Windows (system certificate store). Elsewhere: `APPSEC_CA_BUNDLE=/path/to/corporate-root-ca.pem` |
+| Windows revocation checks fail through the proxy | `APPSEC_SSL_REVOKE_BEST_EFFORT=1` |
+| No internet, only internal mirrors | `APPSEC_OSV_URL`, `APPSEC_KEV_URL`, `APPSEC_EPSS_URL`, `APPSEC_MAVEN_URL` (for example an Artifactory or Nexus Maven mirror) |
 
-Check a winget package ID with `winget show <id>` before installing.
+These were tested against a forward proxy, both open and requiring authentication, and with `NO_PROXY` bypass. NTLM and Kerberos use curl's standard `--proxy-negotiate` support.
 
-**macOS and Linux with Homebrew** (latest version only):
+## Deterministic coverage
 
-```bash
-brew install osv-scanner trivy grype syft gitleaks hadolint kube-linter cppcheck
-```
+What gets examined doesn't depend on the AI:
 
-For Betterleaks, install v1 explicitly (`brew install --cask betterleaks/tap/betterleaks@1`), because the default formula may track v2, which drops SARIF.
+1. **`inventory.js`** builds the checklist, `coverage.json`:
+   - every file;
+   - every hit of the versioned rules in `rules/rules.json`: sinks, misconfigurations, entry points, and secrets, including git history;
+   - every package from lockfiles and manifests.
 
-`brew install trivy` builds from source and wasn't affected by the March 2026 compromise.
+   Each item gets a stable ID.
+2. **`deps.js`** checks every package against OSV.dev, CISA KEV, and EPSS, and adds one item per advisory.
+3. **The AI decides every item** in `ledger.json`: a finding, a false positive with the reason, or needs review. It must open every entry-point file. A hook logs each file it reads.
+4. **The `Stop` hook** runs `coverage-check.js` and won't let the audit finish until every item is decided, every entry-point file was read, and the report carries the coverage summary. The summary's numbers come from the script, not the AI.
 
-**Not natively packaged:** KICS has no release binaries (build from source or use Docker). Prefer Checkov.
+The same commit, rules version, and depth produce the same checklist every time. Two audits of the same commit can be compared decision by decision. The AI's *judgment* on an item can still differ between runs, but every judgment is recorded with its reason. Details: `references/coverage.md`.
 
-### Verify what you downloaded
+## What it never does
 
-These commands come from each project's documentation. Replace `<v>` with the version you installed.
+- **Install anything:** no scanners, packages, plugins, or runtimes.
+- **Run your project's code** (builds, tests, package installs, `cdk synth`, `terraform init`) without asking you first.
+- **Send your code or secrets anywhere.** Only package names and versions go to OSV.dev, and CVE IDs to FIRST EPSS. The KEV catalog is a download.
+- **Test live systems.** Exploit analysis stays on paper, or in local tests you approve.
+- **Report findings to anyone but you:** no issues, pull requests, advisories, or emails to maintainers.
+- **Change your code** without your approval. Fixes are proposed as diffs.
+- **Show full secrets.** They're redacted everywhere, to at most the first 4 characters.
 
-**Trivy** (cosign 3+; with cosign 2.4+ add `--new-bundle-format`):
+## How it checks dependencies without a scanner
 
-```bash
-cosign verify-blob trivy_0.76.0_Linux-64bit.tar.gz \
-  --bundle trivy_0.76.0_Linux-64bit.tar.gz.sigstore.json \
-  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-  --certificate-identity 'https://github.com/aquasecurity/trivy/.github/workflows/reusable-release.yaml@refs/tags/v0.76.0'
-```
+1. **Package list:** `inventory.js` parses your lockfiles and manifests (npm, Yarn, pnpm, Poetry, uv, Pipenv, pip, Maven, Gradle, Go, Cargo, NuGet, Bundler, Composer) into a list of every package and its exact version.
+2. **OSV.dev:** `deps.js` sends that list to [OSV.dev](https://osv.dev), the open vulnerability database behind many commercial scanners. It returns each matching advisory, with its CVE IDs, severity, and fixed versions.
+3. **KEV and EPSS:** it downloads the current CISA Known Exploited Vulnerabilities catalog, flags every CVE that's being actively exploited, and adds each CVE's EPSS exploit-probability score.
+4. **Reachability:** the AI checks whether your code actually uses the vulnerable part of each library.
 
-Trivy container images:
+**One limitation:** Maven and Gradle projects usually have no lockfile. The skill resolves versions managed by a parent POM or BOM (such as Spring Boot's) from Maven Central, but it can't list transitive dependencies without running the build. It reports those as not checked, and suggests committing a lockfile or generating an SBOM in CI.
 
-```bash
-cosign verify aquasec/trivy:0.76.0 \
-  --certificate-identity-regexp 'https://github\.com/aquasecurity/trivy/\.github/workflows/.+' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-```
+## Hooks
 
-**Grype and Syft** (cosign 2.5+; `<tool>` is `grype` or `syft`):
+The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (Node.js). All of them do nothing unless an audit is running: the skill creates `.appsec-audit/.active` when it starts, and removes it at the end. Markers older than 24 hours are ignored.
 
-```bash
-cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
-  --certificate-identity-regexp 'https://github\.com/anchore/<tool>/\.github/workflows/.+' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-sha256sum --ignore-missing -c checksums.txt
-```
+| Hook | What it does |
+|---|---|
+| `PreToolUse` (`guard.js`) | **Asks you** before: commands that run project code, running scripts by path (except the skill's own), anything that sends data off the machine, edits outside `.appsec-audit/`, and `git push`. **Blocks:** piping downloaded scripts into a shell, unredacted secrets in the report, edits to the checklist files, and reporting findings outside the machine (issues, pull requests, advisories, comments, email) |
+| `PostToolUse` (`track.js`) | Logs each file the AI opens, as evidence for the coverage gate |
+| `Stop` (`gate.js`) | Sends the AI back to work until coverage is complete. If the audit needs to wait for you, the skill marks it paused, so the gate lets the turn end |
 
-**TruffleHog:**
-
-```bash
-cosign verify-blob trufflehog_<v>_checksums.txt \
-  --certificate trufflehog_<v>_checksums.txt.pem --signature trufflehog_<v>_checksums.txt.sig \
-  --certificate-identity-regexp 'https://github\.com/trufflesecurity/trufflehog/\.github/workflows/.+' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
-sha256sum --ignore-missing -c trufflehog_<v>_checksums.txt
-```
-
-**Opengrep:** the installer's `--verify-signatures` runs the following check itself:
-
-```bash
-cosign verify-blob --cert opengrep.cert --signature opengrep.sig \
-  --certificate-identity-regexp "https://github.com/opengrep/opengrep.+" \
-  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" opengrep
-```
-
-**OSV-Scanner** (SLSA provenance, with [slsa-verifier](https://github.com/slsa-framework/slsa-verifier)):
-
-```bash
-slsa-verifier verify-artifact ./osv-scanner_linux_amd64 \
-  --provenance-path multiple.intoto.jsonl \
-  --source-uri github.com/google/osv-scanner --source-tag v2.7.0
-```
-
-**TFLint:**
-
-```bash
-gh attestation verify checksums.txt -R terraform-linters/tflint
-sha256sum --ignore-missing -c checksums.txt
-```
-
-**Gitleaks, Hadolint, cargo-deny:** checksums only. Run `sha256sum -c` against the release's checksum file. On Windows, use `Get-FileHash <file> -Algorithm SHA256` and compare by eye.
-
-**PyPI and npm packages:** PyPI shows publish attestations on each release page (Semgrep, Bandit, pip-audit, Checkov, and cdk-nag have them). Run `npm audit signatures` after an npm install.
-
-**Not documented by the project:** a signature-verification command for gosec, Betterleaks, and kube-linter binaries, a GPG key for PMD, and any signatures for cppcheck, Flawfinder, and detect-secrets. Download these from the official release page only, and check checksums where they're published.
-
-## Check your setup
-
-```bash
-bash ~/.claude/skills/appsec-auditor/scripts/check-tools.sh            # everything
-bash ~/.claude/skills/appsec-auditor/scripts/check-tools.sh --missing  # only what's missing
-```
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.claude\skills\appsec-auditor\scripts\check-tools.ps1" -Missing
-```
-
-Test the KEV download (it prints the catalog version and checks a known-exploited CVE):
-
-```bash
-bash ~/.claude/skills/appsec-auditor/scripts/fetch-kev.sh /tmp/kev CVE-2021-44228
-```
-
-## Guardrail hooks
-
-The skill ships a `PreToolUse` hook (`hooks/guard.js`, registered in `hooks/hooks.json`) that enforces its safety rules mechanically. The skill instructions alone don't.
-
-- **It is inert unless an audit is running.** The skill creates `.appsec-audit/.active` in the project when an audit starts and removes it when the audit is done. Without that file, the hook exits immediately and changes nothing.
-- **During an audit:**
-  - It asks you before any command that executes code from the repository, such as package installs, builds, tests, `cdk synth`, or `terraform init`.
-  - It asks before anything that sends secrets or code off the machine.
-  - It asks before edits outside `.appsec-audit/`.
-  - It asks before running scripts by path (`bash x.sh`, `node x.js`, `./run`), except the skill's own, and before `git push`.
-  - It blocks piping downloaded scripts into a shell, writing unredacted secrets into the report, and reporting findings to anyone outside the machine (issues, pull requests, advisories, comments, email).
-- **It covers both shells.** It works with the Bash and PowerShell tools and handles Windows paths.
-- **It needs Node.js.** If Node.js is missing, the hook can't start. Claude Code shows a hook error and lets the action through, and the skill tells you the guardrails are off.
-- **If an audit was interrupted**, the marker may be left behind. The hook ignores markers older than 24 hours; delete `.appsec-audit/.active` to stop it sooner.
-- **To turn the hooks off entirely:** `claude plugin disable appsec-auditor@skills-dir`.
-
-## Network access and data sent
-
-| Destination | What is sent | When |
-|---|---|---|
-| `www.cisa.gov` | Nothing (a download of the KEV catalog) | Every run |
-| `api.first.org` (EPSS) | CVE IDs | Every run with dependency findings |
-| `api.osv.dev`, npm registry, PyPI, `vuln.go.dev`, NuGet, RustSec (git) | Package names and versions | Dependency scans |
-| Scanner database mirrors (Trivy, Grype) | Nothing (downloads) | When those tools run |
-| Semgrep Registry | A rules download for `p/default` (no code); metrics turned off | Only if you use Semgrep CE |
-| Secret providers (TruffleHog or Betterleaks verification) | **Secrets** | **Only if you opt in** |
-| Cloud scanners (Snyk Code, Semgrep login) | **Source code** | **Only if you opt in** |
-
-No source code leaves the machine unless you opt in.
+The hooks work with both the Bash and PowerShell tools and handle Windows paths. Because they're loaded as a plugin, Claude Code starts them on every matching event in every session; without an audit marker they exit immediately. To turn them off: `claude plugin disable appsec-auditor@skills-dir`.
 
 ## Output
 
 Each audit writes to `.appsec-audit/` at the repository root:
 - `report.md`: the human-readable report.
-- `results.sarif`: SARIF 2.1.0, which GitHub code scanning and SARIF-aware IDEs can ingest.
-- `raw/`: each tool's own output.
+- `findings.json` and `results.sarif`: the findings in structured form, and SARIF 2.1.0 rendered from them by `sarif.js` (deterministic: the same findings give the same file). GitHub code scanning and SARIF-aware IDEs can ingest it.
+- `coverage.json`, `deps.json`, `ledger.json`, `reads.jsonl`, `files.txt`: the checklist, the dependency data, the AI's decisions, and the read log. Keep them with the report; they're the evidence for its coverage numbers.
 - `data/kev.json`: the KEV catalog used.
 - `gitlab/`: GitLab security reports (`gl-sast-report.json`, `gl-secret-detection-report.json`, `gl-dependency-scanning-report.json`) when you ask for GitLab output. Publish them from a CI job as `artifacts: reports:`; the skill shows you the job snippet.
+- `raw/`: output of any already-installed scanner it ran.
 
 **Add `.appsec-audit/` to `.gitignore`.** The report describes exploitable weaknesses. The skill offers to add it.
 
+**Depth:** Standard by default. Ask for **Quick** on very large repositories or for a first look, and **Deep** before a release or for high-risk systems.
+
 ## Validate the skill
 
-Before relying on the skill, measure it. Run it against intentionally vulnerable practice applications, where the vulnerabilities are known in advance, and compare what it found with what's there.
+Before relying on the skill, measure it. Run it against intentionally vulnerable practice applications, where the vulnerabilities are known in advance, and compare what it found with what's there. AI-led review varies more than rule-based scanners, so this matters.
 
 **Practice apps** (scan the source only; never deploy them on a reachable network):
 
@@ -353,7 +168,7 @@ Before relying on the skill, measure it. Run it against intentionally vulnerable
 | [OWASP WrongSecrets](https://owasp.org/www-project-wrongsecrets/) | Secrets handling |
 | [TerraGoat](https://github.com/bridgecrewio/terragoat), [CDKGoat](https://github.com/bridgecrewio/cdkgoat) | Terraform and AWS CDK misconfigurations |
 | [Kubernetes Goat](https://github.com/madhuakula/kubernetes-goat) | Kubernetes and containers |
-| [OWASP Benchmark](https://owasp.org/www-project-benchmark/) | Java and Python test cases with an expected-results file, built for scoring how accurate a scanner is |
+| [OWASP Benchmark](https://owasp.org/www-project-benchmark/) | Java and Python test cases with an expected-results file, built for scoring accuracy |
 
 **How to measure:**
 1. Clone a practice app into its own folder, and run the skill at **Standard** depth.
@@ -361,14 +176,14 @@ Before relying on the skill, measure it. Run it against intentionally vulnerable
    - **True positives**: real vulnerabilities it reported.
    - **False positives**: findings that aren't real.
    - **Misses**: documented vulnerabilities it didn't report.
-3. Repeat with no scanners installed (AI-only) and with all of them, to see how much the tools add.
+3. Run the same app two or three times. AI review isn't fully deterministic, and the spread between runs tells you how consistent it is.
 4. Track the results over time. When you change the skill or its references, re-run the same apps and check that nothing got worse.
 
 To automate this, the `skill-creator` skill can turn these runs into an eval set (prompts plus expected findings) and benchmark the skill's results across versions.
 
 ## Limitations
 
-- **AI review is not a guarantee.** The skill reduces false positives by requiring code evidence for every finding and attempting to disprove serious ones. It can still miss vulnerabilities, especially in code paths it couldn't trace. Treat a clean report as reduced risk, not proof of security.
-- **It does static analysis only.** No testing of running applications (DAST) or penetration testing. Exploit proofs are local tests you approve; nothing is ever sent to deployed systems.
-- **Coverage depends on installed tools.** The report states exactly what ran and what didn't.
-- **Versions in this README age.** Check each project's releases page before installing, and verify downloads as shown above.
+- **AI-led review is not exhaustive.** It's thorough where it looks, and every finding is proven, but it doesn't apply thousands of fixed rules the way a scanner does. It can miss vulnerabilities, especially in code paths it didn't trace, and results can vary between runs. Treat a clean report as reduced risk, not proof of security. For regulated or high-assurance work, pair it with your organization's approved scanners.
+- **It does static analysis only.** No testing of running applications (DAST) or penetration testing.
+- **Dependency coverage depends on lockfiles.** Without one, transitive dependencies may go unchecked; the report says which.
+- **Very large repositories** take time and tokens. Use Quick depth, or audit one service at a time.

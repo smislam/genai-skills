@@ -171,7 +171,7 @@ State what the scan is evidence *for*. Never claim it makes a system compliant.
 
 - **NIST SP 800-218 (SSDF) v1.1.** The scan supports PW.7 (review and analyze human-readable code), PW.5 (secure coding practices), PW.9 (secure defaults), and RV.1–RV.3 (respond to vulnerabilities). SSDF v1.2 (Rev. 1) has been an Initial Public Draft since December 2025 and is not final.
 - **NIST SP 800-53 Rev. 5.** The scan supports SA-11 (Developer Testing and Evaluation) and its enhancements SA-11(1) Static Code Analysis and SA-11(4) Manual Code Reviews.
-- **PCI DSS v4.0.1, Requirement 6.** The scan supports the review of bespoke and custom code before release, the coding techniques that prevent common attacks, and the inventory of third-party components (via the SBOM). Cite sub-requirement numbers only after reading them in the PCI DSS document itself.
+- **PCI DSS v4.0.1, Requirement 6.** The scan supports the review of bespoke and custom code before release, the coding techniques that prevent common attacks, and the inventory of third-party components (via the package list in `coverage.json`). Cite sub-requirement numbers only after reading them in the PCI DSS document itself.
 
 ## Severity and prioritization
 

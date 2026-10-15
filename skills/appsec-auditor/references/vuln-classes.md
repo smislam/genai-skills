@@ -1,6 +1,6 @@
 # AI review checklist
 
-Scanners are good at known patterns: injection sinks, dangerous APIs, vulnerable versions, secret formats. They are weak at authorization, authentication logic, business rules, and crypto design, which OWASP calls out as hard to automate. This checklist is for the AI review pass, and it concentrates there. Use it alongside the language guide for each stack (`lang-*.md`, `iac-*.md`, `pipelines-containers.md`).
+The AI review pass covers everything here. Known patterns (injection sinks, dangerous APIs, secret formats) are found deterministically by the rules in `rules/rules.json` and arrive as checklist items. Authorization, authentication logic, business rules, and crypto design are what rule-based scanners can't automate, as OWASP notes, so they get the most reasoning. Use it alongside the language guide for each stack (`lang-*.md`, `iac-*.md`, `pipelines-containers.md`).
 
 Work from the attack-surface map built in SKILL.md step 3. For each entry point, walk the request through the code: who is the caller, what are they allowed to do, and what does the code actually check?
 
@@ -44,7 +44,7 @@ These have no generic signature. Reason about what the feature is *for* and how 
 
 ## Injection beyond the obvious (A05)
 
-Scanners catch direct sinks. The AI pass should look for:
+Direct sinks arrive as checklist items from the rules. Also look for:
 
 - **Second-order injection.** Data stored safely, then later read back and used unsafely, for example in a report query, an admin view, or a log viewer.
 - **Injection through less-watched channels**: headers, filenames, message-queue payloads, CSV and Excel exports (formula injection, CWE-1236), email headers, LDAP, XPath, GraphQL queries built from strings.

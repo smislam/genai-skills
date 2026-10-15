@@ -78,20 +78,3 @@ Covers server-side Java and Kotlin on the JVM: Spring Boot, Spring MVC/WebFlux, 
 ## Android (brief)
 
 Exported components without permissions (`android:exported="true"`), `WebView.addJavascriptInterface` with `setJavaScriptEnabled(true)` on untrusted content, `MODE_WORLD_READABLE` files, and cleartext traffic (`usesCleartextTraffic`, network security config). Tag findings with the OWASP Mobile Top 10.
-
-## Quick search patterns
-
-These find candidates only; every hit still goes through `triage.md`.
-
-```
-createQuery\(.*\+|createNativeQuery\(.*\+|executeQuery\(.*\+|jdbcTemplate\.\w+\(\s*".*"\s*\+
-Runtime\.getRuntime\(\)\.exec|new ProcessBuilder\(
-parseExpression\(|StandardEvaluationContext|ELProcessor
-th:utext|escape="false"
-new ObjectInputStream|readObject\(|enableDefaultTyping|activateDefaultTyping|Id\.CLASS|new Yaml\(\)
-DocumentBuilderFactory|SAXParserFactory|XMLInputFactory|TransformerFactory
-sendRedirect\(|"redirect:"\s*\+
-Cipher\.getInstance\("(AES|DES|RC4)"|AES/ECB|new Random\(|Math\.random\(|MessageDigest\.getInstance\("(MD5|SHA-?1)"
-permitAll\(\)|csrf\(\)\.disable|AbstractHttpConfigurer::disable|allowedOriginPatterns\("\*"\)
-InitialContext\(\)\.lookup|Class\.forName\(
-```

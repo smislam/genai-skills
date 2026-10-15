@@ -52,13 +52,13 @@ Write them to `.appsec-audit/gitlab/`. Include verified findings only (Confirmed
 **Location by type:**
 
 - **SAST:** `{"file": "src/app/UserController.java", "start_line": 88, "end_line": 92}`. `class` and `method` are optional.
-- **Secret detection:** also requires `commit.sha`. Use the commit where the secret was found (from Gitleaks history results), or `HEAD`'s SHA for the working tree: `{"file": "config/prod.env", "start_line": 3, "commit": {"sha": "<40-char sha>"}}`.
+- **Secret detection:** also requires `commit.sha`. Use the commit where the secret was found (from the git history search in `secrets.md`), or `HEAD`'s SHA for the working tree: `{"file": "config/prod.env", "start_line": 3, "commit": {"sha": "<40-char sha>"}}`.
 - **Dependency scanning:** requires `file` (the manifest or lockfile) and `dependency` with `package.name` and `version`. `direct` is optional: `{"file": "package-lock.json", "dependency": {"package": {"name": "lodash"}, "version": "4.17.20", "direct": false}}`.
 
 ## 4. Validate
 
 1. Download the schema for each report type from the URL above. This is a download only; no code is sent.
-2. Validate each report with a JSON Schema validator that is already available, for example Python with `jsonschema` installed: `python -m jsonschema -i gl-sast-report.json sast-report-format.json`. If no validator is available, ask before installing one. Otherwise check the required fields above by hand, and tell the user the report wasn't machine-validated.
+2. Validate each report with a JSON Schema validator if one is already available (for example, Python with `jsonschema` already installed: `python -m jsonschema -i gl-sast-report.json sast-report-format.json`). Don't install one. Otherwise check the required fields above by hand, or with a short script using the standard library, and tell the user the report wasn't validated with a schema validator.
 3. Fix any errors before telling the user the report is ready.
 
 ## 5. Using the reports in GitLab CI

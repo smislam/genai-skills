@@ -1,5 +1,5 @@
 {
-  "description": "appsec-auditor guardrails. Inert unless <project>/.appsec-audit/.active exists.",
+  "description": "appsec-auditor guardrails, read tracking, and coverage gate. All inert unless <repo>/.appsec-audit/.active exists.",
   "hooks": {
     "PreToolUse": [
       {
@@ -10,6 +10,31 @@
             "command": "node",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/guard.js"],
             "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/track.js"],
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate.js"],
+            "timeout": 60
           }
         ]
       }

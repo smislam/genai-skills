@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Preflight for the appsec-auditor skill: report which scanners are installed.
+# Preflight for the appsec-auditor skill: report what's available on this machine.
+# The skill never installs anything. 'required' items run the deterministic checklist, the
+# hooks, and the vulnerability-data lookups; scanner rows are optional extras, used only if
+# already present.
 # Usage: check-tools.sh            (all tools)
 #        check-tools.sh --missing  (only tools that are not installed)
 # Read-only: runs each tool's version command, nothing else.
@@ -10,7 +13,9 @@ only_missing=0
 
 # category|tool|binary|version command
 tools='
-guardrails|Node.js (runs hooks/guard.js)|node|node --version
+required|Node.js 18+ (scripts, hooks, gate)|node|node --version
+required|git|git|git --version
+required|curl (OSV.dev, KEV, EPSS, proxy)|curl|curl --version
 sast|Opengrep|opengrep|opengrep --version
 sast|Semgrep CE|semgrep|semgrep --version
 sast|Bandit (Python)|bandit|bandit --version
@@ -39,9 +44,6 @@ iac|TFLint|tflint|tflint --version
 iac|Hadolint|hadolint|hadolint --version
 iac|kube-linter|kube-linter|kube-linter version
 sbom|Syft|syft|syft version
-util|cosign (verifies downloads)|cosign|cosign version
-util|curl (KEV download)|curl|curl --version
-util|git|git|git --version
 '
 
 printf '%-11s %-34s %-10s %s\n' CATEGORY TOOL STATUS VERSION
@@ -62,5 +64,9 @@ printf '%s\n' "$tools" | while IFS='|' read -r cat name bin vcmd; do
 done
 
 echo
-echo "Install commands with pinned versions and integrity checks: README.md (skill folder)."
-echo "Which tools a repository needs depends on its stack: references/tools.md, 'Required by stack'."
+major=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)
+if [ "$major" -lt 18 ] 2>/dev/null; then
+  echo "Node.js 18+ is missing: the audit runs without the checklist and gate, and is labeled non-deterministic."
+fi
+echo "Scanners are optional: used only if already installed (references/tools.md)."
+echo "This skill never installs tools."

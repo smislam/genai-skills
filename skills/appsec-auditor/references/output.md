@@ -6,7 +6,14 @@ Every run produces two artifacts, and proposed fixes when there are findings:
 .appsec-audit/
 ├── report.md          # human-readable report (template below)
 ├── results.sarif      # SARIF 2.1.0, verified findings only
-└── raw/               # each tool's own output, untouched (e.g. semgrep.sarif, osv.json)
+├── coverage.json      # the deterministic checklist (inventory.js)
+├── deps.json          # OSV, KEV, and EPSS results (deps.js)
+├── ledger.json        # your decision for every checklist item
+├── reads.jsonl        # files you opened (track hook)
+├── state.json         # running / paused / done
+├── files.txt          # files scanned
+├── data/              # kev.json
+└── raw/               # output of any already-installed scanner, if one was run
 ```
 
 - Write to `.appsec-audit/` at the repository root unless the user names another location. Before writing, tell the user the directory should be git-ignored, and offer to add it to `.gitignore`. The report describes exploitable weaknesses, so it shouldn't be committed by accident.
@@ -20,7 +27,7 @@ Lead with the verdict. A reader who stops after the summary should know how bad 
 ```markdown
 # Application Security Audit: <repository or path>
 
-**Date:** <YYYY-MM-DD> · **Commit:** <sha, or "working tree"> · **Mode:** <full | diff against <base>> · **Depth:** <Quick | Standard | Deep>
+**Date:** <YYYY-MM-DD> · **Commit:** <sha, or "working tree"> · **Depth:** <Quick | Standard | Deep> · **Method:** AI-led review<, plus <scanners already installed>>
 
 ## Summary
 
@@ -33,24 +40,28 @@ Lead with the verdict. A reader who stops after the summary should know how bad 
 
 ## Coverage
 
-| Category | Tools run (version) | AI review | Coverage |
-|---|---|---|---|
-| SAST | opengrep 1.x, bandit 1.x | Yes | Full |
-| Dependencies | osv-scanner 2.x | Yes | Full — KEV/EPSS checked live |
-| Secrets | gitleaks 8.x (tree + history) | Yes | Full |
-| IaC / containers | checkov 3.x | Yes | Partial — `cdk synth` not run (not approved); CDK constructs reviewed by AI only |
+<Paste the output of `node scripts/coverage-check.js --root <repo> --summary` here, verbatim. It's the deterministic checklist summary, and the coverage gate checks it's present and current. If Node.js wasn't available, write "**Non-deterministic: coverage not enforced**" instead.>
+
+| Category | How it was covered | Coverage |
+|---|---|---|
+| Code | AI review of <n> entry points and their paths; <n> rule hits decided<; semgrep 1.x already installed, also run> | <Full / partial — what was skipped> |
+| Dependencies | <n> packages from <lockfiles> queried at OSV.dev; KEV and EPSS checked live | <n> checked, <m> not checked (<why: no lockfile, transitive not resolved>) |
+| Secrets | Secret patterns over the tree<, and git history (<branches>)> | <Full / tree only> |
+| IaC / containers / CI | AI review of <files> | <Full / partial> |
+
+State plainly that this is an AI-led review: thorough where it looked, but not exhaustive the way rule-based scanners are.
 
 **Vulnerability data:**
 
 | Source | Version / last updated | Status |
 |---|---|---|
 | CISA KEV catalog | <catalog version>, released <date> | Downloaded this run |
-| <scanner> vulnerability DB | <timestamp> | Current (< 24 h) / **STALE** / **offline** |
+| OSV.dev | Queried <timestamp> | Live / **failed** |
 | FIRST EPSS | scores dated <date> | Looked up this run |
 
 <If any row isn't current, add a warning at the top of the Summary: dependency results are not verified against current data.>
 
-**Not covered / reduced:** <each missing tool or skipped step, and what it means for confidence>
+**Not covered / reduced:** <each skipped step or unchecked area, and what it means for confidence>
 **Languages and surfaces found:** <languages, frameworks, entry points, IaC, pipelines, LLM/agent code>
 
 ## Exploit chains
@@ -69,7 +80,7 @@ Lead with the verdict. A reader who stops after the summary should know how bad 
 - **Impact:** <what they get>
 - **Classification:** CWE-<n> (<name>) · OWASP A0x:2025 · CWE Top 25 #<rank> · <API/LLM/ASI/CICD item if any> · ASVS V<n>
 - **Severity basis:** <matrix cell from triage.md> · CVSS-B (estimated) `<vector>`. For dependencies: **KEV <yes — added <date>, CISA due <date>, ransomware <Known/Unknown> | no>**, EPSS <p> (<percentile>, <date>), reachable <yes/no/unknown>
-- **Detected by:** <tool + rule ID, or "AI review">
+- **Detected by:** <"AI review", "search pattern", "OSV.dev", or an already-installed tool + rule ID>
 - **Part of chain:** <C-n, or none>
 - **Fix:** <what to change and why it works>
 
@@ -92,30 +103,49 @@ Lead with the verdict. A reader who stops after the summary should know how bad 
 
 ## Suppressions and false positives
 
-<Existing suppressions that were respected or overridden, with reasons, and a count of scanner results dismissed as false positives by category, with an example of each.>
+<Existing suppressions that were respected or overridden, with reasons, and a count of candidates dismissed as false positives by category, with an example of each.>
 
 ## Evidence for compliance
 
 <Only if relevant: what this scan supports, e.g. "SSDF PW.7; NIST 800-53 SA-11(1)". Never claim compliance.>
 ```
 
-## SARIF 2.1.0 mapping
+## findings.json
 
-`results.sarif` contains **verified findings only**: Confirmed and Likely, including chains. Raw scanner output stays in `raw/`. Use one run with `tool.driver.name` set to `appsec-auditor`, and record each contributing tool and its version in `run.properties.tools`.
+`findings.json` holds every finding in structured form. `sarif.js` renders `results.sarif` from it, deterministically, and the gate checks the two match. Write it alongside the report:
 
-| Report field | SARIF location |
-|---|---|
-| Finding ID (`F-01`, `C-1`) | `result.properties.findingId` |
-| Rule | `result.ruleId`, plus a `tool.driver.rules[]` entry: `id` (the source tool's rule ID, or `appsec/<cwe>-<slug>` for AI findings), `shortDescription`, `fullDescription`, `help.markdown` (the fix guidance) |
-| Severity | `result.level`: Critical and High → `error`, Medium → `warning`, Low and Info → `note`. Also `rule.properties.security-severity` as a string score: the estimated CVSS-B score if there is one, otherwise Critical `"9.5"`, High `"8.0"`, Medium `"5.5"`, Low `"2.0"` |
-| Confidence | `rule.properties.precision`: Confirmed → `high`, Likely → `medium` |
-| Classification | `rule.properties.tags`: `["security", "external/cwe/cwe-89", "owasp-top10-2025/A05", "cwe-top25-2025/2"]` |
-| Location | `result.locations[0].physicalLocation`: `artifactLocation.uri` relative to the repository root, plus `region.startLine` (and `endLine` when known) |
-| Source → sink path | `result.codeFlows[0].threadFlows[0].locations[]`, one per step |
-| Related locations, chain members | `result.relatedLocations[]`; for chains, `result.properties.chainMembers: ["F-07", "F-12"]` |
-| Message | `result.message.text`: one sentence naming the weakness and the impact |
-| Stable identity | `result.partialFingerprints`: `{"primaryLocationLineHash/v1": "<hash of the normalized sink line>"}`, so findings survive line shifts across runs |
-| Diff mode | `result.baselineState`: `new`, `unchanged`, or `updated` |
-| Respected suppression | `result.suppressions[]`: `{"kind": "inSource", "justification": "<reason from the code>"}` |
+```json
+{
+  "findings": [
+    {
+      "id": "F-01",
+      "title": "All Actuator endpoints exposed without authentication",
+      "severity": "High",
+      "confidence": "Confirmed",
+      "cwe": "CWE-200",
+      "owasp": "A02:2025",
+      "cvss": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:L/VA:N/SC:N/SI:N/SA:N",
+      "message": "Every Actuator endpoint, including heapdump, is reachable without authentication.",
+      "locations": [{ "file": "src/main/resources/application.properties", "line": 21 }],
+      "path": [{ "file": "src/main/resources/application.properties", "line": 21, "note": "exposure.include=*" }],
+      "fix": "Set management.endpoints.web.exposure.include=health,info ...",
+      "chain": []
+    }
+  ]
+}
+```
 
-Validate the file before handing it over: it must be valid JSON, use `"version": "2.1.0"`, and use `"$schema": "https://json.schemastore.org/sarif-2.1.0.json"`. If a validator is available (for example `npx @microsoft/sarif-multitool validate`), run it, but ask first if it would need installing.
+- **Required:** `id` (`F-n`, or `C-n` for a chain), `title`, `severity` (`Critical`, `High`, `Medium`, `Low`, or `Info`), `confidence` (`Confirmed` or `Likely`; "needs review" items aren't findings), and at least one `locations` entry with a repository-relative `file` and a `line`.
+- **Optional:** `cwe`, `owasp`, `cvss` (the estimated vector), `cvssScore`, `message` (one sentence), `path` (source-to-sink steps), `fix` (Markdown), and `chain` (member finding IDs, for chains).
+- **Redact secrets** in every field (rule 7).
+
+Then run `node ${CLAUDE_SKILL_DIR}/scripts/sarif.js --root <repo>`. Never edit `results.sarif` by hand; change `findings.json` and re-run.
+
+**What `sarif.js` produces:**
+- one run, with the tool name `appsec-auditor` and the commit;
+- one rule per finding type (`appsec/<cwe>-<title>`), carrying `security-severity` (from the CVSS score, or the severity level) and CWE and OWASP tags;
+- `level` from the severity: Critical and High → `error`, Medium → `warning`, Low and Info → `note`;
+- the primary location, related locations, and the source-to-sink path as a code flow;
+- `partialFingerprints` from a hash of the normalized source line, so results stay matched across line shifts.
+
+Results are sorted by finding ID, so the same `findings.json` always gives a byte-identical file.

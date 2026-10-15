@@ -4,14 +4,17 @@ Dependency licenses are a legal and business risk, not a security vulnerability.
 
 ## Collecting license data
 
-Use data the audit already collects. Don't install a tool only for licenses unless the user asks.
+Use data the audit already has, and nothing that needs installing.
 
-| Source | Command or location |
+| Source | Where |
 |---|---|
-| Trivy | `trivy fs --scanners license --format json -o .appsec-audit/raw/trivy-license.json .` |
-| SBOM (Syft or cdxgen) | The `licenses` field of each component in `.appsec-audit/raw/sbom.cdx.json` |
-| Rust | `cargo deny --format json check licenses` (uses the policy in `deny.toml` if the project has one) |
-| Manifests | `license` fields in `package.json`, `pyproject.toml`, `*.nuspec`, `pom.xml`, `Cargo.toml`, as a fallback |
+| Lockfiles | `package-lock.json` (lockfile v2 and later) records a `license` for each entry in `packages`. Most other lockfiles (`poetry.lock`, `uv.lock`, `Cargo.lock`, `packages.lock.json`) don't |
+| Installed packages | Vendored or installed packages carry their license: `node_modules/<pkg>/package.json` `license`, Python `*.dist-info/METADATA` `License-Expression`, `vendor/` `LICENSE` files |
+| Registry metadata | For direct dependencies without local data, the registry's public metadata: `https://registry.npmjs.org/<pkg>/<version>` (`license`), `https://pypi.org/pypi/<pkg>/<version>/json` (`info.license_expression` or `info.license`), `https://crates.io/api/v1/crates/<crate>/<version>` (`version.license`), the Maven POM's `<licenses>`. Sends only package names |
+| Policy | `deny.toml` license rules, or an allow-list file, if the project has one |
+| An already-installed tool | Trivy's license scanner or an existing SBOM, if present |
+
+At Standard depth, check direct dependencies at minimum. At Deep depth, check transitive ones where the data is available. Say in the report which you covered.
 
 Use SPDX identifiers (`MIT`, `Apache-2.0`, `GPL-3.0-only`) in the report. When sources disagree, report the most restrictive one and say so.
 
