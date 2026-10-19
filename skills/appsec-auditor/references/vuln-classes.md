@@ -2,6 +2,20 @@
 
 The AI review pass covers everything here. Known patterns (injection sinks, dangerous APIs, secret formats) are found deterministically by the rules in `rules/rules.json` and arrive as checklist items. Authorization, authentication logic, business rules, and crypto design are what rule-based scanners can't automate, as OWASP notes, so they get the most reasoning. Use it alongside the language guide for each stack (`lang-*.md`, `iac-*.md`, `pipelines-containers.md`).
 
+## Contents
+- [Access control (A01, API1, API3, API5; CWE-862, 863, 639, 284, 915)](#access-control-a01-api1-api3-api5-cwe-862-863-639-284-915)
+- [Authentication and session (A07; CWE-287, 306, 384, 521, 798, 613)](#authentication-and-session-a07-cwe-287-306-384-521-798-613)
+- [Business logic (A06; API6; CWE-840, 362, 367, 841)](#business-logic-a06-api6-cwe-840-362-367-841)
+- [Cryptography (A04; CWE-327, 328, 329, 330, 338, 321, 295)](#cryptography-a04-cwe-327-328-329-330-338-321-295)
+- [Injection beyond the obvious (A05)](#injection-beyond-the-obvious-a05)
+- [Exceptional conditions (A10; CWE-703, 754, 755, 209, 248)](#exceptional-conditions-a10-cwe-703-754-755-209-248)
+- [Resource exhaustion and denial of service (API4; CWE-400, 770, 1333, 409, 674, 834, 1050)](#resource-exhaustion-and-denial-of-service-api4-cwe-400-770-1333-409-674-834-1050)
+- [Logging and monitoring (A09; CWE-778, 117, 532)](#logging-and-monitoring-a09-cwe-778-117-532)
+- [Supply chain and integrity (A03, A08; CWE-494, 829, 1357)](#supply-chain-and-integrity-a03-a08-cwe-494-829-1357)
+- [LLM and agent code (LLM Top 10 2025, Agentic Top 10 2026)](#llm-and-agent-code-llm-top-10-2025-agentic-top-10-2026)
+- [Data protection (ASVS V14; CWE-200, 312, 359)](#data-protection-asvs-v14-cwe-200-312-359)
+
+
 Work from the attack-surface map built in SKILL.md step 3. For each entry point, walk the request through the code: who is the caller, what are they allowed to do, and what does the code actually check?
 
 ## Access control (A01, API1, API3, API5; CWE-862, 863, 639, 284, 915)

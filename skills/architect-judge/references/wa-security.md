@@ -2,6 +2,27 @@
 
 Part of the question-level review in `well-architected.md`. Read that file first for the rating, scoring, and finding rules. Source: AWS Well-Architected Framework, November 6, 2024 release, verified 2026-10-14. Risk if a best practice is not established: **H** High, **M** Medium, **L** Low. *(operating model)* marks a question that is about the operating organization rather than the design.
 
+## Contents
+- [Security foundations](#security-foundations)
+  - SEC 1: How do you securely operate your workload?
+- [Identity and access management](#identity-and-access-management)
+  - SEC 2: How do you manage authentication for people and machines?
+  - SEC 3: How do you manage permissions for people and machines?
+- [Detection](#detection)
+  - SEC 4: How do you detect and investigate security events?
+- [Infrastructure protection](#infrastructure-protection)
+  - SEC 5: How do you protect your network resources?
+  - SEC 6: How do you protect your compute resources?
+- [Data protection](#data-protection)
+  - SEC 7: How do you classify your data?
+  - SEC 8: How do you protect your data at rest?
+  - SEC 9: How do you protect your data in transit?
+- [Incident response](#incident-response)
+  - SEC 10: How do you anticipate, respond to, and recover from incidents?
+- [Application security](#application-security)
+  - SEC 11: How do you incorporate and validate the security properties of applications throughout the design, development, and deployment lifecycle?
+
+
 Design principles: implement a strong identity foundation; maintain traceability; apply security at all layers; automate security best practices; protect data in transit and at rest; keep people away from data; prepare for security events.
 
 Security is judged in depth here, with no separate security dimension. Each question carries the specific checks to make against the artifact. Supporting standards for those checks: NIST CSF 2.0; NIST SP 800-207 (zero trust); NIST SP 800-53 Rev. 5; OWASP ASVS, OWASP Top 10, and OWASP API Security Top 10 (2023); CIS Benchmarks; SLSA and SBOM practice for the supply chain.

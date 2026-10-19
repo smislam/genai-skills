@@ -51,7 +51,16 @@ From the artifact alone, list the components, external dependencies, data stores
 
 ### 3. Evaluate each dimension
 
-Read `references/dimensions.md`. For each of the six dimensions, evaluate every criterion that falls within scope. For AWS Well-Architected, follow `references/well-architected.md` and its six pillar files (`references/wa-*.md`): rate every best practice and every question, then calculate the pillar scores. For each criterion, record:
+Read `references/dimensions.md`. For each of the six dimensions, evaluate every criterion that falls within scope. For AWS Well-Architected, follow `references/well-architected.md` and the six pillar files: rate every best practice and every question, then calculate the pillar scores.
+
+| Pillar | File |
+|---|---|
+| Operational Excellence | `references/wa-operational-excellence.md` |
+| Security | `references/wa-security.md` |
+| Reliability | `references/wa-reliability.md` |
+| Performance Efficiency | `references/wa-performance-efficiency.md` |
+| Cost Optimization | `references/wa-cost-optimization.md` |
+| Sustainability | `references/wa-sustainability.md` | For each criterion, record:
 
 - **Evidence**: the artifact location, or "not addressed".
 - **Assessment**: what is right or wrong, measured against the named standard or principle.
@@ -59,7 +68,7 @@ Read `references/dimensions.md`. For each of the six dimensions, evaluate every 
 
 Adapt the criteria to the artifact type using the table in `references/dimensions.md`. A migration strategy isn't expected to specify subnet layouts, but it is expected to address data migration, cutover risk, and rollback.
 
-**Independent dimension reviewers (large artifacts, when you can run subagents).** For an artifact too large to hold in full attention, give each of two to four fresh subagents the artifact plus a subset of the dimensions and their section of `references/dimensions.md`. The Well-Architected review is the largest part, so it splits well by pillar: give each subagent `references/well-architected.md` plus only its pillars' `references/wa-*.md` files. Then merge their results: deduplicate, resolve conflicting severities from the evidence (not by vote), and check every Critical finding yourself before it stands.
+**Independent dimension reviewers (large artifacts, when you can run subagents).** For an artifact too large to hold in full attention, give each of two to four fresh subagents the artifact plus a subset of the dimensions and their section of `references/dimensions.md`. The Well-Architected review is the largest part, so it splits well by pillar: give each subagent `references/well-architected.md` plus only its pillars' files from the table above. Then merge their results: deduplicate, resolve conflicting severities from the evidence (not by vote), and check every Critical finding yourself before it stands.
 
 ### 4. Score
 

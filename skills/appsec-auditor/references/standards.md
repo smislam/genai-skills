@@ -2,6 +2,17 @@
 
 Every finding carries one primary **CWE** ID. Derive the other tags from it: OWASP category, CWE Top 25 rank, and any context-specific list (API, LLM, agentic, mobile, CI/CD). Verified against primary sources on 2026-10-15. When a tag decides severity or a compliance claim, re-check the source if you have tools.
 
+## Contents
+- [OWASP Top 10:2025 (current)](#owasp-top-102025-current)
+- [CWE Top 25 Most Dangerous Software Weaknesses, 2025](#cwe-top-25-most-dangerous-software-weaknesses-2025)
+- [Context-specific lists](#context-specific-lists)
+- [OWASP ASVS 5.0.0 (May 30, 2025)](#owasp-asvs-500-may-30-2025)
+- [Secure-coding standards (secondary IDs)](#secure-coding-standards-secondary-ids)
+- [Compliance evidence the scan supports](#compliance-evidence-the-scan-supports)
+- [Severity and prioritization](#severity-and-prioritization)
+- [Output formats](#output-formats)
+
+
 ## OWASP Top 10:2025 (current)
 
 Source: `https://top10.owasp.org/2025/`. It maps 248 CWEs. Use OWASP's per-category CWE lists to assign the category.

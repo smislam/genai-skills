@@ -2,6 +2,17 @@
 
 Six dimensions, each with criteria, the standards they are measured against, and the failure signs that most often justify a finding. Criteria are probes, not a form to fill in: score every criterion in scope, but put your words where the evidence bites.
 
+## Contents
+- [Minimum reviewable content](#minimum-reviewable-content)
+- [Adapting to the artifact type](#adapting-to-the-artifact-type)
+- [1. Architecture Alignment (`ALN`)](#1-architecture-alignment-aln)
+- [2. AWS Well-Architected (`WA`)](#2-aws-well-architected-wa)
+- [3. Architecture Quality (`QAL`)](#3-architecture-quality-qal)
+- [4. Data Management (`DAT`)](#4-data-management-dat)
+- [5. Architecture Governance (`GOV`)](#5-architecture-governance-gov)
+- [6. Compliance (`CMP`)](#6-compliance-cmp)
+
+
 Each criterion has an ID (for example `DAT-4`). Well-Architected findings use the AWS question and best-practice IDs (for example `REL 9`, `SEC08-BP02`). Use it in findings so scores and issues cross-reference cleanly.
 
 ## Minimum reviewable content

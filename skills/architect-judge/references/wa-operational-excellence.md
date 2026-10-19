@@ -2,6 +2,24 @@
 
 Part of the question-level review in `well-architected.md`. Read that file first for the rating, scoring, and finding rules. Source: AWS Well-Architected Framework, November 6, 2024 release, verified 2026-10-14. Risk if a best practice is not established: **H** High, **M** Medium, **L** Low. *(operating model)* marks a question that is about the operating organization rather than the design.
 
+## Contents
+- [Organization](#organization)
+  - OPS 1: How do you determine what your priorities are?
+  - OPS 2: How do you structure your organization to support your business outcomes?
+  - OPS 3: How does your organizational culture support your business outcomes?
+- [Prepare](#prepare)
+  - OPS 4: How do you implement observability in your workload?
+  - OPS 5: How do you reduce defects, ease remediation, and improve flow into production?
+  - OPS 6: How do you mitigate deployment risks?
+  - OPS 7: How do you know that you are ready to support a workload?
+- [Operate](#operate)
+  - OPS 8: How do you utilize workload observability in your organization?
+  - OPS 9: How do you understand the health of your operations?
+  - OPS 10: How do you manage workload and operations events?
+- [Evolve](#evolve)
+  - OPS 11: How do you evolve operations?
+
+
 Design principles: organize teams around business outcomes; implement observability for actionable insights; safely automate where possible; make frequent, small, reversible changes; refine operations procedures frequently; anticipate failure; learn from all operational events and metrics; use managed services.
 
 

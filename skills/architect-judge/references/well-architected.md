@@ -2,6 +2,17 @@
 
 How to run the full question-level review across all six pillars. The questions, best practices (BPs), and the risk AWS documents for not establishing each BP are in one file per pillar (see "Pillar files" below). This is the AWS Well-Architected (`WA`) dimension. It is the only place security is scored.
 
+## Contents
+- [How to run it](#how-to-run-it)
+  - [1. Confirm the review depth](#1-confirm-the-review-depth)
+  - [2. Rate every best practice](#2-rate-every-best-practice)
+  - [3. Rate every question](#3-rate-every-question)
+  - [4. Score each question and pillar](#4-score-each-question-and-pillar)
+  - [5. Turn risks into findings](#5-turn-risks-into-findings)
+  - [6. Apply lenses](#6-apply-lenses)
+- [Pillar files](#pillar-files)
+
+
 **Source.** AWS Well-Architected Framework, publication date **November 6, 2024**, the latest framework release as of the verification date. Question and BP titles and risk levels were read from each page under `https://docs.aws.amazon.com/wellarchitected/latest/framework/` on 2026-10-14. AWS edits these pages between releases. If you have tools and a rating turns on a BP's exact wording or risk level, re-read that BP's page, and cite the framework date in the report.
 
 **Size.** 57 questions and 307 best practices:

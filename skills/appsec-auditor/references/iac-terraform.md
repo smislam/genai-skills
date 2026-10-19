@@ -2,6 +2,13 @@
 
 Covers Terraform and OpenTofu configurations, mainly with the AWS provider, plus the Terraform concerns that apply to any provider: state, variables, providers, and modules. Tool commands are in `tools.md`; triage rules in `triage.md`.
 
+## Contents
+- [What to read first](#what-to-read-first)
+- [Misconfigurations by area](#misconfigurations-by-area)
+- [Chains to look for](#chains-to-look-for)
+- [Execution risks](#execution-risks)
+
+
 ## What to read first
 
 | File | Why it matters |

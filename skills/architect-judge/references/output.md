@@ -2,6 +2,19 @@
 
 Lead with the verdict. Keep the language plain and declarative. Drop a section only when it has nothing real in it, never to soften the report. Cite artifact locations as `[§3.2]`, `[diagram: Ingestion flow]`, or `[main.tf:42]`, criterion IDs from `dimensions.md` as `DAT-4`, and Well-Architected questions and best practices by their AWS IDs as `REL 9` or `SEC08-BP02`. Mark unverified external facts **[unverified]**.
 
+## Contents
+- [Verdict: <Approved | Approved with Conditions | Revise and Resubmit | Rejected>](#verdict-approved--approved-with-conditions--revise-and-resubmit--rejected)
+- [1. Initial assessment](#1-initial-assessment)
+- [2. Scorecard](#2-scorecard)
+- [3. Synthesis](#3-synthesis)
+- [4. Strengths](#4-strengths)
+- [5. Critical issues and gaps](#5-critical-issues-and-gaps)
+- [6. Recommendations](#6-recommendations)
+- [7. Approval status](#7-approval-status)
+- [Out-of-scope observations](#out-of-scope-observations)
+- [Style rules](#style-rules)
+
+
 Do not include author, team, or reviewer names anywhere in the report.
 
 ```markdown

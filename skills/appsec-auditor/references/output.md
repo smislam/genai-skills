@@ -2,6 +2,20 @@
 
 Every run produces two artifacts, and proposed fixes when there are findings:
 
+## Contents
+- [Report template](#report-template)
+- [Summary](#summary)
+- [Coverage](#coverage)
+- [Exploit chains](#exploit-chains)
+- [Findings](#findings)
+- [License risk](#license-risk)
+- [Performance](#performance)
+- [Needs human review](#needs-human-review)
+- [Suppressions and false positives](#suppressions-and-false-positives)
+- [Evidence for compliance](#evidence-for-compliance)
+- [findings.json](#findingsjson)
+
+
 ```
 .appsec-audit/
 ├── report.md          # human-readable report (template below)

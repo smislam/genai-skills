@@ -2,6 +2,21 @@
 
 Lead with the call. Use these structures, but drop a section that has nothing real to say rather than filling it — an empty "Strengths" section is better left out than padded.
 
+## Contents
+- [Quick take](#quick-take)
+- [Full review](#full-review)
+- [Call: <Go | Go, with conditions | Test first | Reshape | Drop> (confidence <high | medium | low>)](#call-go--go-with-conditions--test-first--reshape--drop-confidence-high--medium--low)
+- [Assumptions to confirm](#assumptions-to-confirm)
+- [The idea, at its best](#the-idea-at-its-best)
+- [What it rests on](#what-it-rests-on)
+- [Problems, ranked](#problems-ranked)
+- [Tests to run before committing](#tests-to-run-before-committing)
+- [Stop signals](#stop-signals)
+- [Scorecard](#scorecard)
+- [What would change the call](#what-would-change-the-call)
+- [After pushback](#after-pushback)
+
+
 Tag factual claims inline with **[checked]**, **[reasoned]**, or **[unknown]** as described in SKILL.md step 5. Tag the claims that carry weight; you don't need to tag every sentence.
 
 Every response, quick or full, includes the assumptions you made and ends by asking the user to confirm or correct them.

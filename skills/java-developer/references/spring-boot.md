@@ -346,6 +346,22 @@ void onSettled(InvoiceSettled event) { notifier.send(event.invoiceId()); }
 
 Events decouple modules inside one application — useful for keeping a bounded context from depending on another. Keep payloads immutable records carrying ids, not entities (a detached entity on another thread is a `LazyInitializationException`). Default listeners are **synchronous and inside the publisher's transaction**, which surprises people: a throwing listener rolls back the publisher's work. Use `AFTER_COMMIT` for side effects and `@Async` (plus explicit error handling) when you want real decoupling. For cross-service events, use a broker with an outbox — in-process events are not durable.
 
+## Scheduling and async
+
+**`@Scheduled`** (with `@EnableScheduling`):
+- **Pick the right timing.** `fixedDelay` waits after each run finishes; `fixedRate` starts on a fixed beat whether or not the last run finished. Use `cron` with an explicit `zone` for calendar times, so daylight-saving changes and server time zones don't move the job.
+- **The default scheduler has one thread,** so one slow job delays every other job. Size it (`spring.task.scheduling.pool.size`), or keep jobs short and hand the work off.
+- **Every instance runs every job.** With three replicas, a nightly job runs three times. Use a distributed lock (ShedLock with the database you already have), run the job somewhere that has exactly one instance (a Kubernetes `CronJob`, a dedicated worker), or make the job idempotent. Usually do both: the lock and idempotency.
+- **Make jobs observable:** log the start, the end, the duration, and the outcome, and alert when a job hasn't succeeded within its expected window. A silently failing scheduled job is invisible until someone needs its output.
+- **Externalize schedules** to configuration (`@Scheduled(cron = "${billing.cron}")`), so they change without a rebuild, and so tests can disable them.
+
+**`@Async`** (with `@EnableAsync`):
+- **It works through a proxy:** calling an `@Async` method from the same class runs it synchronously, exactly like `@Transactional` self-invocation.
+- **Return `CompletableFuture<T>`** when the caller needs the result or the failure. Exceptions from a `void` `@Async` method go only to the `AsyncUncaughtExceptionHandler`, so configure one, or they disappear.
+- **Bound the executor.** Size the pool and the queue (`spring.task.execution.pool.*`), or use virtual threads (`spring.threads.virtual.enabled=true`) with a semaphore for whatever the work calls. An unbounded queue is a memory leak under load (see "Anti-patterns").
+- **Context doesn't follow the thread.** MDC, the security context, and the tracing context are thread-bound. Propagate them with a `TaskDecorator` (`ContextPropagatingTaskDecorator` with Micrometer context propagation), or pass what the task needs explicitly.
+- **Transactions don't cross threads.** The async method starts its own transaction, if any, and can't see the caller's uncommitted data. Publish an event after commit instead (see "Events").
+
 ## Observability
 
 Micrometer is built in. The three things worth doing on every service:
@@ -361,6 +377,21 @@ Timer.builder("invoice.settlement")
 ```
 
 Cardinality is the one trap that bites hard: a tag with unbounded values (ids, emails, raw paths) creates a time series per value and will take down your metrics backend. Use `@Observed` or `ObservationRegistry` for spans that matter. Export the standard JVM, HTTP, datasource, and HikariCP metrics — they answer most production questions without custom instrumentation.
+
+## Actuator and health
+
+Actuator is an operational API. Treat it with the same care as a public one:
+
+- **Expose only what operations needs over HTTP:** typically `health`, `info`, and the metrics endpoint your monitoring scrapes (`management.endpoints.web.exposure.include=health,info,prometheus`). **Never `*`:** `heapdump`, `env`, `threaddump`, `configprops`, `loggers`, and `mappings` leak credentials, memory contents, and internals, or allow runtime changes.
+- **Separate the port where you can** (`management.server.port`), so the management endpoints aren't reachable through the public ingress. And secure them with Spring Security either way: the health endpoint open (probes need it), everything else behind authentication.
+- **Control access deliberately.** Boot 3.4 and later configure endpoint access with `management.endpoints.access.default` and per-endpoint `management.endpoint.<id>.access` (`none`, `read-only`, `unrestricted`), replacing the older `enabled` flags. The `shutdown` endpoint stays off unless you have a reason.
+- **Health detail:** `management.endpoint.health.show-details=when-authorized`, so anonymous callers see only `UP` or `DOWN`, not your database host and version.
+- **Liveness is not readiness:**
+  - **Liveness** says "this process is broken; restart it". Keep it to the application's own state. **Never include downstream dependencies in liveness:** a database outage would make Kubernetes restart every pod at once, turning an outage into a restart storm.
+  - **Readiness** says "don't send me traffic right now". This is where critical dependencies belong, through health groups (`management.endpoint.health.group.readiness.include=readinessState,db`).
+  - Wire them to the probes as described in "Packaging and containers".
+- **Custom `HealthIndicator`s** must be fast and must time out. A health check that hangs on a slow dependency hangs the probe.
+- **`info`:** add build and git information (the `spring-boot-maven-plugin` `build-info` goal, `git-commit-id-maven-plugin`), so you can tell which version is running. Don't put secrets or environment details there.
 
 ## Testing
 

@@ -2,6 +2,26 @@
 
 Part of the question-level review in `well-architected.md`. Read that file first for the rating, scoring, and finding rules. Source: AWS Well-Architected Framework, November 6, 2024 release, verified 2026-10-14. Risk if a best practice is not established: **H** High, **M** Medium, **L** Low. *(operating model)* marks a question that is about the operating organization rather than the design.
 
+## Contents
+- [Foundations](#foundations)
+  - REL 1: How do you manage Service Quotas and constraints?
+  - REL 2: How do you plan your network topology?
+- [Workload architecture](#workload-architecture)
+  - REL 3: How do you design your workload service architecture?
+  - REL 4: How do you design interactions in a distributed system to prevent failures?
+  - REL 5: How do you design interactions in a distributed system to mitigate or withstand failures?
+- [Change management](#change-management)
+  - REL 6: How do you monitor workload resources?
+  - REL 7: How do you design your workload to adapt to changes in demand?
+  - REL 8: How do you implement change?
+- [Failure management](#failure-management)
+  - REL 9: How do you back up data?
+  - REL 10: How do you use fault isolation to protect your workload?
+  - REL 11: How do you design your workload to withstand component failures?
+  - REL 12: How do you test reliability?
+  - REL 13: How do you plan for disaster recovery (DR)?
+
+
 Design principles: automatically recover from failure; test recovery procedures; scale horizontally to increase aggregate workload availability; stop guessing capacity; manage change through automation.
 
 ### Foundations

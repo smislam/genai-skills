@@ -110,7 +110,9 @@ Read `references/vuln-classes.md`, plus each item's `guide` (listed below), and 
 | AWS CDK | `references/iac-aws-cdk.md` |
 | CI/CD, Dockerfiles, Kubernetes | `references/pipelines-containers.md` |
 | Dependencies | `references/dependencies.md` |
+| Dependency licenses (their own report section) | `references/licenses.md` |
 | Secrets | `references/secrets.md` |
+| Tagging findings: CWE, OWASP Top 10 (2025), CWE Top 25, API, LLM, agentic, and CI/CD lists, ASVS 5.0, CVSS, EPSS, KEV | `references/standards.md` |
 
 - **Entry points.** Open each entry-point file with the **Read** tool (the read log is evidence; `cat` doesn't count). Trace its input to its sinks, and check its authentication and authorization at the route, object, and property level. Decide it `reviewed` (with what you checked) or `finding`.
 - **Patterns and secrets.** Verify each hit with `references/triage.md`. Look at secret items with `secret-context.js`, which redacts the values (`references/secrets.md`), never with `git show`.
