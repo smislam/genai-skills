@@ -1,6 +1,6 @@
 ---
 name: java-developer
-description: Expert Java and Spring Boot engineering — writing production-grade code, tests, and architecture, plus migrating legacy Java (8/11/17) to modern Java (21/25) and Spring Boot 4. Covers clean architecture, SOLID, GoF patterns, concurrency and virtual threads, JVM performance and GC tuning, scaling, security hardening, and JUnit 5 test design. Use this skill whenever the work touches Java, Kotlin-on-JVM interop, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "fix this NullPointerException", "why is this slow", "add a test", "review this code", or "upgrade our dependencies". Also use it for JVM-adjacent decisions (threading model, caching, connection pools, GC flags, Docker/JVM container settings) even when the user never says "Java".
+description: Expert Java and Spring Boot engineering — writing production-grade code, tests, and architecture, plus migrating legacy Java (8/11/17) to modern Java (21/25) and Spring Boot 4 — assessing existing tests and dead code first, converting Thymeleaf UIs to Angular, and writing a migration report. Covers clean architecture, SOLID, GoF patterns, concurrency and virtual threads, JVM performance and GC tuning, scaling, security hardening, and JUnit 5 test design. Use this skill whenever the work touches Java, Kotlin-on-JVM interop, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "fix this NullPointerException", "why is this slow", "add a test", "review this code", or "upgrade our dependencies", or "migrate this legacy app". Also use it for JVM-adjacent decisions (threading model, caching, connection pools, GC flags, Docker/JVM container settings) even when the user never says "Java".
 ---
 
 # Java Developer
@@ -101,7 +101,10 @@ SKILL.md stays short on purpose. Load the reference that matches the task — re
 | Language features, API choices, idiomatic modern Java, what changes when the project is on 21 instead of 25 | `references/modern-java.md` |
 | Lambdas and functions as values, composition, `Predicate`/`Comparator` combinators, purity, functional error handling | `references/functional-java.md` |
 | Restructuring existing code — especially untested legacy: seams, characterization tests, strangler fig, expand/contract, safe-refactor workflow | `references/refactoring.md` |
-| Upgrading Java 8/11/17 → 21/25, javax→jakarta, Spring Boot 2.x→3.x→4.0, OpenRewrite | `references/migration.md` |
+| Upgrading Java 8/11/17 → 21/25, javax→jakarta, Spring Boot 2.x→3.x→4.0, OpenRewrite. **Any upgrade or migration request starts here**, and also uses the three references below | `references/migration.md` |
+| Before upgrading legacy code: inventorying the existing tests and what each actually verifies, coverage gaps, and identifying dead or unused code with evidence | `references/legacy-assessment.md` |
+| Converting a server-rendered Thymeleaf UI to an Angular single-page app with a REST API, as part of modernizing a legacy project | `references/thymeleaf-to-angular.md` |
+| The written migration synopsis: what was done, dependency and behavior changes, test inventory, dead code found, verification, and rollback | `references/migration-report.md` |
 | Spring Boot application structure, config, web, data, transactions, observability, testing slices | `references/spring-boot.md` |
 | Threads, virtual threads, structured concurrency, locks, memory model, async | `references/concurrency.md` |
 | Test design, JUnit 5, AssertJ, Mockito, Testcontainers, ArchUnit, TDD, coverage | `references/testing.md` |

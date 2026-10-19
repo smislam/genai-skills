@@ -2,6 +2,11 @@
 
 Read this when moving a codebase to a newer Java or Spring Boot version, or when asked whether an upgrade is feasible. The goal is a sequence of small, verifiable steps — never one heroic branch.
 
+Every migration has three companion documents:
+- **`legacy-assessment.md`:** before changing anything, inventory the existing tests (what they actually verify) and identify dead and unused code.
+- **`thymeleaf-to-angular.md`:** when the project's UI is server-rendered Thymeleaf, converting it to Angular is part of the migration, as a separate phase after the runtime upgrade.
+- **`migration-report.md`:** the written synopsis of what was done, kept current at every step, including the test inventory and the dead code found.
+
 ## Contents
 - [Strategy](#strategy)
 - [The procedure](#the-procedure)
@@ -13,6 +18,7 @@ Read this when moving a codebase to a newer Java or Spring Boot version, or when
 - [Spring Boot 2.x → 3.x](#spring-boot-2x--3x)
 - [Spring Boot 3.x → 4.x](#spring-boot-3x--4x)
 - [Modernizing code after the upgrade](#modernizing-code-after-the-upgrade)
+- [Beyond the code](#beyond-the-code)
 - [Common blockers](#common-blockers)
 - [Checklist](#checklist)
 
@@ -30,18 +36,22 @@ Worth saying plainly to a user weighing the cost: the strongest argument for upg
 
 ## The procedure
 
-1. **Inventory.** Current Java and framework versions, every direct dependency and its latest version supporting the target, build plugin versions, and anything using JDK internals, `javax.*`, or bytecode manipulation (agents, Lombok, Mockito inline, ByteBuddy, ASM, cglib — these are version-sensitive and break loudly).
-2. **Baseline the tests.** You cannot upgrade safely without a suite you trust. If coverage on critical paths is thin, add tests *before* the upgrade — they are the only thing that will tell you the migration preserved behavior. This is often the real first task.
-3. **Upgrade the build toolchain** — Maven/Gradle, compiler, surefire/failsafe, and the agent-dependent plugins — while still on the old Java. Old plugin versions fail on new JDKs in confusing ways, so eliminate that variable first.
-4. **Run the old build on the new JDK** without changing `release`. This surfaces agent, reflection, and plugin problems in isolation.
-5. **Raise `release`/`sourceCompatibility`** to the target and fix compilation.
-6. **Update dependencies** to versions that support the target, ideally through a BOM.
-7. **Apply automated migration** (OpenRewrite) for the mechanical parts, review the diff carefully, commit it separately from hand-written changes.
-8. **Fix tests, then run the application.** Many breakages are runtime-only: reflection, serialization, classpath scanning, resource loading.
-9. **Verify beyond the unit suite** — integration tests, a load test (GC and thread behavior change between versions), and a canary deploy.
-10. **Then modernize** idioms, in separate reviewable commits.
+1. **Inventory.** Current Java and framework versions, every direct dependency and its latest version supporting the target, build plugin versions, and anything using JDK internals, `javax.*`, or bytecode manipulation (agents, Lombok, Mockito inline, ByteBuddy, ASM, cglib — these are version-sensitive and break loudly). Also list the deployment surface: CI pipeline JDKs, container base images, JVM launch flags, and the database migration tool (see "Beyond the code").
+2. **Assess the tests and the code** (`legacy-assessment.md`). Run the suite as it stands and record the result. Read the tests and write down what each actually verifies. Map them to the entry points and critical paths. Identify dead and unused code, with evidence. Start the migration report (`migration-report.md`) with these findings.
+3. **Baseline the tests.** You cannot upgrade safely without a suite you trust. Where critical paths are uncovered or only weakly covered, add characterization tests *before* the upgrade, green on the old version (`refactoring.md`). They're the only thing that will tell you the migration preserved behavior. This is often the real first task.
+4. **Remove confirmed dead code first,** in its own commits, with the user's approval (`legacy-assessment.md` §5). There's less to migrate and less to test.
+5. **Upgrade the build toolchain** — Maven/Gradle, compiler, surefire/failsafe, and the agent-dependent plugins — while still on the old Java. Old plugin versions fail on new JDKs in confusing ways, so eliminate that variable first.
+6. **Run the old build on the new JDK** without changing `release`. This surfaces agent, reflection, and plugin problems in isolation.
+7. **Raise `release`/`sourceCompatibility`** to the target and fix compilation.
+8. **Update dependencies** to versions that support the target, ideally through a BOM.
+9. **Apply automated migration** (OpenRewrite) for the mechanical parts, review the diff carefully, commit it separately from hand-written changes.
+10. **Fix tests, then run the application.** Many breakages are runtime-only: reflection, serialization, classpath scanning, resource loading.
+11. **Verify beyond the unit suite** — integration tests, a load test (GC and thread behavior change between versions), and a canary deploy.
+12. **Then modernize** idioms, in separate reviewable commits.
+13. **Convert the UI,** if it's Thymeleaf: to Angular, page by page, as its own phase (`thymeleaf-to-angular.md`).
+14. **Finish the migration report** (`migration-report.md`): what was done, dependency and behavior changes, verification evidence, dead code removed and flagged, and what's left.
 
-Keep each step a commit that compiles and passes tests. When something breaks three weeks later, `git bisect` has to be able to help.
+Keep each step a commit that compiles and passes tests. When something breaks three weeks later, `git bisect` has to be able to help. Update the migration report at each step, so it's accurate whenever the work pauses.
 
 ## Tooling
 
@@ -157,6 +167,20 @@ Once you are green on the new version, improve idioms in small, separately revie
 
 Let test coverage lead: refactor the areas you have tests for, and add tests before refactoring the areas you do not. `refactoring.md` has the mechanics — characterization tests for code with no coverage, how to find a seam, and the expand/migrate/contract sequence for changes too big for one commit.
 
+## Beyond the code
+
+An upgrade isn't done when the code compiles. Check each of these, and record the result in the migration report:
+
+- **CI and build agents:** the pipeline's JDK version, Maven or Gradle wrapper version, cache keys, and any JDK-specific steps.
+- **Container images:** the base image (JDK or JRE version and distribution), and the JVM flags in the Dockerfile, Helm charts, or start scripts. Removed flags stop the JVM from starting.
+- **Database schema tooling:** Flyway or Liquibase versions supported by the new Boot version, and the databases they still support. A Hibernate upgrade with `ddl-auto` set to `update` or `validate` may behave differently; run migrations against a copy of production data.
+- **Data compatibility:** serialized data that outlives a deploy (Java-serialized sessions, cached objects, messages on a queue). During a rolling deploy, old and new versions read each other's data.
+- **API and JSON compatibility for clients:** Jackson 3 and Boot changes can alter JSON output (date formats, null handling, property order), error-response shape, and URL matching (trailing slashes). Contract-test the API against what existing clients send and expect.
+- **Configuration:** property renames across every environment's configuration, not just `application.properties` in the repository (Kubernetes ConfigMaps, environment variables, a config server).
+- **Observability:** metric names and tags, tracing (Sleuth → Micrometer Tracing), and log format. Dashboards and alerts that silently stop matching are a common post-upgrade blind spot.
+- **Performance baseline:** latency, throughput, memory, and GC behavior measured *before* the upgrade, so the after-numbers mean something.
+- **Rollback:** how to return to the previous release, and what makes that hard (schema changes, data written in a new format). Use expand/contract for schema changes (`refactoring.md`), so the old version keeps working until the new one is proven.
+
 ## Common blockers
 
 | Blocker | Why | Resolution |
@@ -170,3 +194,21 @@ Let test coverage lead: refactor the areas you have tests for, and add tests bef
 | Thin test coverage | No way to detect behavioral regression | Add tests on critical paths first — this is the migration's real first task |
 | Hand-written `spring.factories` | No longer read in Boot 3 | Move to `AutoConfiguration.imports` |
 | Big-bang branch | Weeks of unmergeable work, unattributable failures | One version hop per branch, each releasable |
+
+## Checklist
+
+Before calling a migration done:
+
+- [ ] Existing tests inventoried and explained, and their gaps on critical paths listed (`legacy-assessment.md`)
+- [ ] Characterization tests added for the critical gaps, green on the old version *before* the upgrade
+- [ ] Dead and unused code identified with evidence and confidence; removed only with approval, in separate commits
+- [ ] One version hop per step, each a commit that compiles and passes tests
+- [ ] OpenRewrite output reviewed, and committed separately from hand-written changes
+- [ ] Dependencies on versions supporting the target; nothing left on `javax.*` where Jakarta is required
+- [ ] Integration tests run against the production database engine (Testcontainers), not only H2
+- [ ] CI, container images, JVM flags, schema tooling, configuration, and observability updated ("Beyond the code")
+- [ ] API and JSON output checked against existing clients
+- [ ] Performance compared with the pre-upgrade baseline
+- [ ] Thymeleaf UI converted to Angular page by page, with parity tests, if in scope (`thymeleaf-to-angular.md`)
+- [ ] Rollback path documented and tested
+- [ ] Migration report complete (`migration-report.md`): synopsis, what was done, dependency and behavior changes, test inventory before and after, dead code, verification evidence, defects found, and follow-ups
