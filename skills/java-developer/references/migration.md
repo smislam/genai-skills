@@ -37,7 +37,7 @@ Worth saying plainly to a user weighing the cost: the strongest argument for upg
 ## The procedure
 
 1. **Inventory.** Current Java and framework versions, every direct dependency and its latest version supporting the target, build plugin versions, and anything using JDK internals, `javax.*`, or bytecode manipulation (agents, Lombok, Mockito inline, ByteBuddy, ASM, cglib — these are version-sensitive and break loudly). Also list the deployment surface: CI pipeline JDKs, container base images, JVM launch flags, and the database migration tool (see "Beyond the code").
-2. **Assess the tests and the code** (`legacy-assessment.md`). Run the suite as it stands and record the result. Read the tests and write down what each actually verifies. Map them to the entry points and critical paths. Identify dead and unused code, with evidence. Start the migration report (`migration-report.md`) with these findings.
+2. **Assess the tests and the code** (`legacy-assessment.md`). Run the suite as it stands and record the result. Read the tests and write down what each actually verifies. Map them to the entry points and critical paths. Identify dead and unused code, with evidence. Take a code-quality snapshot (`code-quality.md`). Start the migration report (`migration-report.md`) with these findings.
 3. **Baseline the tests.** You cannot upgrade safely without a suite you trust. Where critical paths are uncovered or only weakly covered, add characterization tests *before* the upgrade, green on the old version (`refactoring.md`). They're the only thing that will tell you the migration preserved behavior. This is often the real first task.
 4. **Remove confirmed dead code first,** in its own commits, with the user's approval (`legacy-assessment.md` §5). There's less to migrate and less to test.
 5. **Upgrade the build toolchain** — Maven/Gradle, compiler, surefire/failsafe, and the agent-dependent plugins — while still on the old Java. Old plugin versions fail on new JDKs in confusing ways, so eliminate that variable first.
@@ -202,6 +202,7 @@ Before calling a migration done:
 - [ ] Existing tests inventoried and explained, and their gaps on critical paths listed (`legacy-assessment.md`)
 - [ ] Characterization tests added for the critical gaps, green on the old version *before* the upgrade
 - [ ] Dead and unused code identified with evidence and confidence; removed only with approval, in separate commits
+- [ ] Code-quality snapshot taken before the migration, and again after it (`code-quality.md`)
 - [ ] One version hop per step, each a commit that compiles and passes tests
 - [ ] OpenRewrite output reviewed, and committed separately from hand-written changes
 - [ ] Dependencies on versions supporting the target; nothing left on `javax.*` where Jakarta is required

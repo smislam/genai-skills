@@ -1,6 +1,6 @@
 ---
 name: java-developer
-description: Expert Java and Spring Boot engineering — writing production-grade code, tests, and architecture, plus migrating legacy Java (8/11/17) to modern Java (21/25) and Spring Boot 4 — assessing existing tests and dead code first, converting Thymeleaf UIs to Angular, and writing a migration report. Covers clean architecture, SOLID, GoF patterns, concurrency and virtual threads, JVM performance and GC tuning, scaling, security hardening, and JUnit 5 test design. Use this skill whenever the work touches Java, Kotlin-on-JVM interop, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "fix this NullPointerException", "why is this slow", "add a test", "review this code", or "upgrade our dependencies", or "migrate this legacy app". Also use it for JVM-adjacent decisions (threading model, caching, connection pools, GC flags, Docker/JVM container settings) even when the user never says "Java".
+description: Expert Java and Spring Boot engineering — writing production-grade code, tests, and architecture, plus migrating legacy Java (8/11/17) to modern Java (21/25) and Spring Boot 4 — assessing existing tests and dead code first, converting Thymeleaf UIs to Angular, and writing a migration report. Covers Clean Code (Robert C. Martin), clean architecture, SOLID, GoF patterns, concurrency and virtual threads, JVM performance and GC tuning, scaling, security hardening, and JUnit 5 test design, and code review. Use this skill whenever the work touches Java, Kotlin-on-JVM interop, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", or "upgrade our dependencies", or "migrate this legacy app". Also use it for JVM-adjacent decisions (threading, caching, connection pools, GC flags, container settings) even when the user never says "Java".
 ---
 
 # Java Developer
@@ -41,7 +41,7 @@ Do not reach for a design pattern because it is a design pattern. Patterns are t
 
 ### 3. Implement to the quality bar
 
-The bar below is non-negotiable because each item is a defect class, not a style preference.
+The bar below is non-negotiable because each item is a defect class, not a style preference. It sits on top of Robert C. Martin's *Clean Code* (`references/clean-code.md`): meaningful names, small functions doing one thing at one level of abstraction, no flag or output arguments, comments that explain why, exceptions instead of error codes, clean F.I.R.S.T. tests, small cohesive classes, and the Boy Scout Rule. Apply those principles to everything you write.
 
 ### 4. Verify, don't assume
 
@@ -111,6 +111,8 @@ SKILL.md stays short on purpose. Load the reference that matches the task — re
 | AuthN/AuthZ, injection, crypto, OWASP, Spring Security, dependency and supply-chain risk | `references/security.md` |
 | Profiling, JMH, GC and JVM flags, allocation, caching, DB tuning, horizontal scaling | `references/performance.md` |
 | Maven/Gradle setup, static-analysis gates, CI quality enforcement | `references/build-quality.md` |
+| Robert C. Martin's *Clean Code*: names, functions, comments, formatting, objects vs data structures, error handling, boundaries, clean tests, classes, simple design, smells and heuristics, and where its advice is dated | `references/clean-code.md` |
+| Reviewing code (order, severity, output format), complexity and duplication thresholds, and quality snapshots of a codebase, including SonarQube | `references/code-quality.md` |
 
 Setting up a quality gate (JaCoCo, SpotBugs + FindSecBugs, Error Prone + NullAway, PMD, Spotless, Enforcer, CycloneDX, dependency-check) has a handful of wiring details that are build-fatal and invisible until you run the build — the Error Prone javac exports, the NullAway test exclusion, Spotless line endings. `build-quality.md` has each one as verified config. Resolve current plugin versions yourself rather than recalling them.
 
@@ -126,7 +128,7 @@ For code of any substance, deliver in this order:
 5. **What you verified** — the command you ran and its result, or a plain statement that you could not run it.
 6. **Follow-ups worth knowing**, if any: a risk you noticed, a migration this unblocks, a test that should exist. Keep it to a few lines and do not expand scope on your own.
 
-When reviewing someone else's code, lead with the correctness and security findings, then design, then style — and say clearly which findings are opinion rather than defect.
+When reviewing someone else's code, lead with the correctness and security findings, then design, then style — and say clearly which findings are opinion rather than defect. Follow `references/code-quality.md` for the procedure, severities, and output format, and `references/clean-code.md` for the clean-code findings.
 
 **Report every defect you notice, including ones your rewrite already fixes.** If you replace raw JDBC with `JdbcClient` and that incidentally closes a resource leak the old code had, name the leak. Otherwise the user cannot tell whether the same bug is in the other six classes written that way, or what was happening in production until now. Silently fixing a bug you spotted is worse than reporting it and fixing it.
 

@@ -4,7 +4,7 @@ Read this before upgrading or migrating a legacy project. Before changing anythi
 - **What do the existing tests actually verify?** They're the only evidence a migration preserved behavior, and legacy suites often verify much less than their size suggests.
 - **What code is actually used?** Every dead class migrated is wasted effort and an extra place for a regression to hide.
 
-Both results go into the migration report (`migration-report.md`).
+Both results go into the migration report (`migration-report.md`). Take a code-quality snapshot at the same time (`code-quality.md`, "Assessing a codebase"), so the report can show quality before and after.
 
 ## Contents
 - [1. Inventory the existing tests](#1-inventory-the-existing-tests)

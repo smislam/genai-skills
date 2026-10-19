@@ -42,6 +42,9 @@ Critical paths with no or weak coverage: <list>. Characterization tests added fo
 | `/reports/annual` | Endpoint | Wired; zero requests in 60 days of access logs; runs yearly? | Probably dead (seasonal?) | Flagged, kept |
 | `commons-beanutils` | Dependency | `dependency:analyze` unused; verified no reflective use | Dead | Removed |
 
+## Code quality
+<The quality snapshot from code-quality.md, with Before and After columns: complexity, god classes, duplication, package cycles, coverage, high-severity static-analysis findings, the hotspots, and Clean Code observations. "After" is measured when the migration is done.>
+
 ## What was done
 <One entry per step or commit, in order. Steps:>
 1. <Build toolchain upgraded: Maven 3.9.x, surefire 3.x, Lombok 1.18.x. Commit …>
