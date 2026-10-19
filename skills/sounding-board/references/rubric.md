@@ -47,6 +47,17 @@ Score from evidence, not optimism. If a dimension rests on [unknown] beliefs, sc
 | Downside | Money and time burned | Outage, lock-in, migration risk | Half-finished migration, regressions | Overhead and lost trust | Runway, reversibility, dependents |
 | Evidence | Customer behavior, not opinions | Metrics, load tests, prototypes | Coverage, profiling, spikes | Pilot results, baselines | Conversations with people who did it |
 
+For the other idea types:
+
+| Dimension | Buying a tool or vendor | Go-to-market / content | Money decision |
+|---|---|---|---|
+| Problem | A measured need the tool meets | A defined audience with a real problem | A clear purpose for the money |
+| Fit | Meets the need better than what's already owned | Message and channel reach that audience | The return matches the goal and the timeline |
+| Feasibility | Implementation, integration, and ownership are realistic | Budget and skills to execute and measure | Affordable in the bad case, not just the expected one |
+| Edge | Beats cheaper options, including "use what we have" | A believable reason to choose this over competitors | Beats the alternative uses of the money |
+| Downside | Lock-in, renewal cost, a failed security review | Spend without learning; brand damage | Loss the user can't absorb; illiquidity; penalties |
+| Evidence | References, trials, documented terms | Pilot results, real conversion data | The source terms, base rates, a modeled downside |
+
 ## Decision rules
 
 Apply in order and stop at the first that matches:

@@ -5,16 +5,8 @@ Lead with the call. Use these structures, but drop a section that has nothing re
 ## Contents
 - [Quick take](#quick-take)
 - [Full review](#full-review)
-- [Call: <Go | Go, with conditions | Test first | Reshape | Drop> (confidence <high | medium | low>)](#call-go--go-with-conditions--test-first--reshape--drop-confidence-high--medium--low)
-- [Assumptions to confirm](#assumptions-to-confirm)
-- [The idea, at its best](#the-idea-at-its-best)
-- [What it rests on](#what-it-rests-on)
-- [Problems, ranked](#problems-ranked)
-- [Tests to run before committing](#tests-to-run-before-committing)
-- [Stop signals](#stop-signals)
-- [Scorecard](#scorecard)
-- [What would change the call](#what-would-change-the-call)
 - [After pushback](#after-pushback)
+- [Decision memo](#decision-memo)
 
 
 Tag factual claims inline with **[checked]**, **[reasoned]**, or **[unknown]** as described in SKILL.md step 5. Tag the claims that carry weight; you don't need to tag every sentence.
@@ -125,3 +117,38 @@ When the user defends the idea or corrects an assumption, respond with what move
 
 <Short explanation, then any revised tests or stop signals.>
 ```
+
+## Decision memo
+
+Optional. Offer it after a full review, or when the user needs to convince someone who wasn't in the conversation: a manager, a team, an investor, a partner. One page. It's written for that reader: no conversation history, no "you said", and the user's own name and context only as they want them shown. Keep the evidence labels on claims that carry weight, so the reader can tell fact from estimate.
+
+```markdown
+# Decision memo: <the decision, in one line>
+
+**Recommendation: <Go | Go, with conditions | Test first | Reshape | Drop>** (confidence <high | medium | low>)
+<Two or three sentences: what to do, and the main reason.>
+
+## The proposal
+<What's being proposed, in plain terms: the goal it serves, what it costs (money, time, people), and when.>
+
+## Why
+- <The strongest reasons it can work, each with its evidence: [checked], [reasoned], or [unknown]>
+
+## Main risks
+| Risk | Severity | Mitigation or test |
+|---|---|---|
+| <the risk, specifically> | <fatal / serious / fixable> | <what reduces it, or the test that settles it> |
+
+## Before committing
+<The one to three tests, each with its cost and its pass line, decided in advance.>
+
+## Stop signals
+<What would make us stop or change course, with a threshold and a checkpoint date.>
+
+## Alternatives considered
+<Including doing nothing, with one line each on why they're less attractive.>
+
+## Assumptions
+<The assumptions the recommendation depends on. Confirmed ones are marked as confirmed; unconfirmed ones say what changes if they're wrong.>
+```
+

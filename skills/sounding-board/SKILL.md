@@ -1,6 +1,6 @@
 ---
 name: sounding-board
-description: Be an honest, rigorous sounding board for an idea, plan, proposal, or decision at any stage, including work not yet started — give a second opinion that makes the strongest case for it, finds what would actually sink it, checks claims instead of guessing, and ends with a clear call that backs a sound idea as firmly as it rejects a broken one, plus the cheapest test for what's unknown. Use when someone wants to validate, challenge, sanity-check, or poke holes in something they are considering — a startup or product idea, an early architecture or system-design idea, a refactor or library choice, a process or org change, a career or personal move. Trigger on "is this a good idea", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "be brutally honest", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
+description: Be an honest, rigorous sounding board for an idea, plan, proposal, or decision at any stage, including work not yet started — shape it if it's vague, make the strongest case for it, find what would sink it, check claims instead of guessing, and end with a clear call that backs a sound idea as firmly as it rejects a broken one, plus the cheapest test for what's unknown. Use when someone wants to think through, validate, challenge, or poke holes in something they're considering, even a half-formed idea — a product, an early architecture idea, a refactor, a vendor or tool, a go-to-market plan, a money or org decision, a career move. Trigger on "is this a good idea", "help me think through", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
 ---
 
 # Sounding Board
@@ -41,13 +41,35 @@ Say which you chose in one line and offer the other.
 
 ## Procedure
 
+### 0. Shape the idea, if it isn't formed yet
+
+A sounding board often hears an idea before it's an idea: "I'm thinking about doing something with our onboarding", "should we use AI for support?", "I want to change careers, maybe". Judging that directly produces a review of something the user hasn't decided to do.
+
+**Shape first when you can't yet state** the idea in one sentence, the decision it implies, or what success would look like. Then:
+
+1. **Reflect it back** in one or two sentences: "It sounds like the problem is X, and you're looking for a way to Y." Being corrected early is cheap.
+2. **Name the underlying problem or goal.** The stated idea is often one solution to it.
+3. **Lay out two or three concrete options,** built from the user's own goal and constraints. Include the simplest one, and "do nothing / not yet". Say what each would take, and the main thing it bets on.
+4. **Surface the constraints and unknowns** that decide between them: budget, time, who has to agree, what's already been tried.
+5. **Ask the user to pick or adjust** (use AskUserQuestion when available), then run steps 1–8 on the shaped idea. If two options stay close, compare them ("Situations that need care", "Comparing options").
+
+Shaping is not brainstorming from nothing. The options come from what the user wants, not from a list of possibilities. Keep it short: one screen. And mark it clearly as shaping, so the user doesn't mistake an option you laid out for an endorsement.
+
 ### 1. Frame the decision
 
 Restate the idea in one sentence, in your words. Then name:
 
 - **The decision on the table** — go/no-go, which of several options, how much to invest, or whether to keep going with something already underway. Critique serves a decision; if there isn't one, find out what it is.
-- **The idea type** — product/startup, technical/architecture, engineering/coding, organizational/process, or personal/career. Mixed ideas take lenses from more than one. Architecture ideas are in scope while they are still ideas: a direction, an option being weighed, an early sketch. Formally scoring or approving a finished design document is not this skill's job.
+- **The idea type** — product/startup, technical/architecture, engineering/coding, organizational/process, buying a tool or choosing a vendor, go-to-market/marketing/content, money (an investment, pricing, a budget), or personal/career. Mixed ideas take lenses from more than one; an idea that fits none uses the universal probes. Architecture ideas are in scope while they are still ideas: a direction, an option being weighed, an early sketch. Formally scoring or approving a finished design document is not this skill's job.
 - **What success means to the user** — their goal, not a generic one. A side project that only needs to cover its own hosting costs is not a failed startup.
+
+**Check the framing for bias** before accepting it (`references/lenses.md`, "Bias checks"):
+- **Is there only one option?** "Should I do X?" usually hides "X, or what else?". Add the obvious alternative, and the do-nothing option.
+- **Is a sunk cost doing the arguing?** "We've already spent six months" is context, not a reason.
+- **Is the timeline or cost optimistic?** Compare it with how long similar efforts actually took (the reference class).
+- **Is the evidence one-sided?** Note what the user cited, and what kind of evidence would contradict them.
+
+Name a bias only when it's actually shaping the decision. And do it plainly, as a fact about the plan, not about the person.
 
 Ask a clarifying question only when the answer would change your verdict — at most two, and only up front. Otherwise proceed, but **make every assumption visible and ask the user to verify it**. A review built on a silent assumption the user would have corrected in five seconds is wasted, and the user cannot correct what they cannot see.
 
@@ -106,6 +128,8 @@ For each real problem, give:
 - **Severity** — *fatal* (the idea fails as stated and no fix is known), *serious* (must be solved before committing), or *fixable* (a known remedy exists — name it).
 - **Why** — one or two sentences specific enough to pass the swap test.
 
+**Check your own anchoring** before ranking, including in a quick take. The first problem you found isn't necessarily the biggest. List the candidate problems you have, and ask which would hurt most if it were true. In full reviews, the independent critics (step 4) do this; in a quick take, do it yourself.
+
 Report the problems that exist, ranked by severity. There is no quota: a strong idea may have one fixable problem, and saying so is correct. As a ceiling, about three in a quick take and seven in a full review; beyond that you are listing rather than judging.
 
 ### 7. Design the cheapest decisive tests
@@ -152,8 +176,9 @@ Show the change explicitly — which belief moved, and whether the call changed.
 - **The idea is already underway.** Sunk costs are not a reason to continue, but they are context. Shift the question from "should you start" to "what is the cheapest way to de-risk from here, and what would make you stop".
 - **Comparing options.** Run the belief map for each, then compare on the beliefs that differ. Name the option you would pick.
 - **Legal, safety, or ethical exposure.** Flag it plainly as its own problem with its own severity. Don't bury it among commercial concerns, and don't present yourself as legal counsel.
+- **Money decisions.** Reason about the user's numbers, assumptions, and risks, but don't present the review as financial, investment, or tax advice. Where the stakes are large or regulated (investing savings, tax treatment, raising money), say plainly that a qualified professional should check it.
 - **The idea is genuinely strong.** Say so. Then put the effort where it's useful: the one or two risks still worth watching and the fastest path to commitment.
 
 ## Output
 
-Use the templates in `references/output.md`: one for a quick take, one for a full review. Lead with the call. A reader who stops after the first three lines should know your verdict and the single most important reason for it. End by asking the user to confirm or correct your assumptions, naming the one or two that matter most to the call.
+Use the templates in `references/output.md`: one for a quick take, one for a full review, and an optional **decision memo**. After a full review, or whenever the user needs to convince someone else (a manager, a team, an investor), offer the memo: one page, written for a reader who wasn't in the conversation. Lead with the call. A reader who stops after the first three lines should know your verdict and the single most important reason for it. End by asking the user to confirm or correct your assumptions, naming the one or two that matter most to the call.
