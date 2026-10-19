@@ -54,7 +54,10 @@ Covers server-side Java and Kotlin on the JVM: Spring Boot, Spring MVC/WebFlux, 
 - **JNDI and remote class loading.** `InitialContext.lookup(input)` enables JNDI injection.
 - **Reflection from input.** `Class.forName(input)` and `Method.invoke` with names from requests.
 - **Kotlin.** `!!` and Java platform types can turn a missing header or claim into an exception path that skips a check. This matters when exception handlers fail open (OWASP A10:2025). Kotlin string templates in SQL (`"... $id"`) are concatenation.
-- **Actuator.** Exposed `/actuator/env`, `/heapdump`, `/threaddump`, `/jolokia`, `/gateway` endpoints leak secrets or allow changes.
+- **Actuator.** Exposed `/actuator/env`, `/heapdump`, `/threaddump`, `/jolokia`, `/gateway` endpoints leak secrets or allow changes. Check the Boot version before judging what `management.endpoints.web.exposure.include=*` reaches:
+  - **On Boot 3.5 and later,** `heapdump` defaults to `access=none`, so it's reachable only if `management.endpoint.heapdump.access` is also set. `shutdown` is off by default in every version.
+  - **On 3.4 and earlier,** exposure alone is enough.
+  - **Access settings:** `management.endpoints.access.default` and `management.endpoint.<id>.access` (Boot 3.4+), which replace the deprecated `enabled` flags, and `management.endpoints.access.max-permitted` cap what exposure grants. Read them before rating the finding.
 
 ## Configuration
 

@@ -384,7 +384,11 @@ Actuator is an operational API. Treat it with the same care as a public one:
 
 - **Expose only what operations needs over HTTP:** typically `health`, `info`, and the metrics endpoint your monitoring scrapes (`management.endpoints.web.exposure.include=health,info,prometheus`). **Never `*`:** `heapdump`, `env`, `threaddump`, `configprops`, `loggers`, and `mappings` leak credentials, memory contents, and internals, or allow runtime changes.
 - **Separate the port where you can** (`management.server.port`), so the management endpoints aren't reachable through the public ingress. And secure them with Spring Security either way: the health endpoint open (probes need it), everything else behind authentication.
-- **Control access deliberately.** Boot 3.4 and later configure endpoint access with `management.endpoints.access.default` and per-endpoint `management.endpoint.<id>.access` (`none`, `read-only`, `unrestricted`), replacing the older `enabled` flags. The `shutdown` endpoint stays off unless you have a reason.
+- **Control access deliberately.**
+  - **Boot 3.4 and later** configure endpoint access with `management.endpoints.access.default` and per-endpoint `management.endpoint.<id>.access` (`none`, `read-only`, `unrestricted`). These replace `management.endpoints.enabled-by-default` and `management.endpoint.<id>.enabled`, deprecated in 3.4, so update them during an upgrade.
+  - **To cap access application-wide,** use `management.endpoints.access.max-permitted`, which overrides both the default and per-endpoint settings. For example, `read-only` for every endpoint in production.
+  - **Defaults:** `shutdown` is inaccessible by default. **Since Boot 3.5, `heapdump` is too** (`access=none`): using it needs both exposure *and* `management.endpoint.heapdump.access`, whereas on 3.4 and earlier, exposing it was enough. On an older Boot, `exposure.include=*` exposes heap dumps.
+  - Keep both off unless you have a reason.
 - **Health detail:** `management.endpoint.health.show-details=when-authorized`, so anonymous callers see only `UP` or `DOWN`, not your database host and version.
 - **Liveness is not readiness:**
   - **Liveness** says "this process is broken; restart it". Keep it to the application's own state. **Never include downstream dependencies in liveness:** a database outage would make Kubernetes restart every pod at once, turning an outage into a restart storm.
