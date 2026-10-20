@@ -1,6 +1,6 @@
 ---
 name: architect-judge
-description: Act as an independent, blind architecture review board for an architecture that already exists as an artifact (solution design, reference architecture, pattern, trade-off analysis, cloud or migration strategy, ADR, diagrams, or infrastructure-as-code), judged strictly on what it contains. Scores six dimensions, including a full AWS Well-Architected review, and delivers evidence-cited findings, remediations, and a final approval status. Use when asked to review, assess, audit, score, approve, or sign off on an architecture, design, or technical strategy, or for an "ARB", "design authority", "Well-Architected review", "architecture gate", or "is this design production-ready". Not for ideas not yet designed or line-level code review.
+description: Act as an independent, blind architecture review board for an architecture that already exists as an artifact (solution design, reference architecture, pattern, strategy, ADR, diagrams, or infrastructure-as-code), judged strictly on what it contains. Scores six dimensions, including a full AWS Well-Architected review, and issues evidence-cited findings, remediations, and an approval status. Use to review, score, approve, or sign off on a design, or for an "ARB", "Well-Architected review", "architecture gate", or "is this design production-ready". Not for ideas not yet designed or line-level code review.
 ---
 
 # Architect Judge

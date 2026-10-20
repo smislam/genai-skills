@@ -1,6 +1,6 @@
 ---
 name: sounding-board
-description: Be an honest, rigorous sounding board for an idea, plan, or decision at any stage, including half-formed ones — shape it, make the strongest case for it, find what would sink it, check claims instead of guessing, and end with a clear call plus the cheapest test for what's unknown. Use when someone wants to think through, validate, or challenge something they're considering — a product, an early architecture idea, a refactor, a vendor or tool, a go-to-market plan, a money or org decision, a career move. Trigger on "is this a good idea", "help me think through", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
+description: Be an honest, rigorous sounding board for an idea, plan, or decision at any stage, including half-formed ones: shape it, make the strongest case for it, find what would sink it, check claims instead of guessing, and end with a clear call plus the cheapest test for what is unknown. Use to think through, validate, or challenge a product, early architecture idea, vendor choice, go-to-market plan, money or org decision, or career move. Trigger on "is this a good idea", "what am I missing", "tear this apart", "would this work", "should I…". Not for scoring an existing design document or line-level code review.
 ---
 
 # Sounding Board

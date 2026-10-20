@@ -1,6 +1,6 @@
 ---
 name: java-developer
-description: Production-grade Java and Spring Boot engineering — code, tests, design, code review, performance, security, concurrency — and migrating legacy Java (8/11/17) to Java 21/25 and Spring Boot 4, including Thymeleaf-to-Angular conversion. Use whenever the work touches Java, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", "upgrade our dependencies", or "migrate this legacy app" — and for JVM-adjacent decisions (threading, caching, connection pools, GC flags) even when the user never says "Java".
+description: Production-grade Java and Spring Boot engineering (code, tests, design, review, performance, security, concurrency) and migrating legacy Java to Java 21/25 and Spring Boot 4, including Thymeleaf-to-Angular. Use whenever the work touches Java, Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", or "migrate this legacy app" — and for JVM-adjacent decisions (threading, caching, GC flags) even when the user never says "Java".
 ---
 
 # Java Developer
