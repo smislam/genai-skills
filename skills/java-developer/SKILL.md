@@ -1,6 +1,6 @@
 ---
 name: java-developer
-description: Expert Java and Spring Boot engineering — writing production-grade code, tests, and architecture, plus migrating legacy Java (8/11/17) to modern Java (21/25) and Spring Boot 4 — assessing existing tests and dead code first, converting Thymeleaf UIs to Angular, and writing a migration report. Covers Clean Code (Robert C. Martin), clean architecture, SOLID, GoF patterns, concurrency and virtual threads, JVM performance and GC tuning, scaling, security hardening, and JUnit 5 test design, and code review. Use this skill whenever the work touches Java, Kotlin-on-JVM interop, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", or "upgrade our dependencies", or "migrate this legacy app". Also use it for JVM-adjacent decisions (threading, caching, connection pools, GC flags, container settings) even when the user never says "Java".
+description: Production-grade Java and Spring Boot engineering — code, tests, design, code review, performance, security, concurrency — and migrating legacy Java (8/11/17) to Java 21/25 and Spring Boot 4, including Thymeleaf-to-Angular conversion. Use whenever the work touches Java, Spring/Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", "upgrade our dependencies", or "migrate this legacy app" — and for JVM-adjacent decisions (threading, caching, connection pools, GC flags) even when the user never says "Java".
 ---
 
 # Java Developer
@@ -23,6 +23,10 @@ The failure to avoid is a confident wrong claim, not a stated fact with its sour
 
 ## Operating procedure
 
+### 0. Clarify, only if it changes the code
+
+If the ask is ambiguous in a way that would change what you write (target Java/Boot version when no build file exists, scope of a refactor, test expectations, which of several valid designs), interview the user before coding. Use `AskUserQuestion` with one batch of up to four questions, each with selectable answers and your recommendation first. Repeat with a further batch only if the answers open new questions. Skip this for small, clear asks, and never ask what the build file or neighboring code already answers.
+
 ### 1. Orient before writing
 
 In an existing codebase, read before you add. Three minutes here prevents a day of mismatched code:
@@ -35,6 +39,8 @@ For greenfield work, state the architecture you're choosing and why in two sente
 
 ### 2. Design, briefly and out loud
 
+**Plan before editing when the change is large.** For multi-file work, migrations, refactors, or anything hard to reverse, write a short plan first: the files you will touch, the steps in order, and the exact command that will verify it (for example `mvn -q verify`). Get the user's approval, then edit. If you could describe the diff in one sentence, skip the plan.
+
 Before any non-trivial implementation, name the domain model, the boundaries, and the failure modes. Design decisions worth one line each: what is the aggregate, what is immutable, what crosses a transaction boundary, what can fail and who handles it, what concurrency the code will see.
 
 Do not reach for a design pattern because it is a design pattern. Patterns are the answer to a pressure you can name — "callers need to swap the pricing rule at runtime" earns a Strategy; "we have three subclasses just in case" earns nothing. If you cannot name the pressure in a sentence, write the straightforward code. `references/design.md` covers which pattern answers which pressure and the OO/SOLID judgment behind it.
@@ -45,7 +51,11 @@ The bar below is non-negotiable because each item is a defect class, not a style
 
 ### 4. Verify, don't assume
 
-Compile and run the tests. `mvn -q verify` or `./gradlew build` is the minimum; if the project has a static-analysis gate, it must pass too. If you cannot run the build in this environment, say so explicitly rather than implying the code was verified — and re-read your diff looking specifically for the things a compiler would catch (imports, generics, exhaustive switches, nullability).
+Compile and run the tests, and show the evidence: the command and its result, not "tests pass". `mvn -q verify` or `./gradlew build` is the minimum; if the project has a static-analysis gate, it must pass too. Iterate until the check passes, and fix root causes rather than suppressing the error.
+
+- **Bug fixes:** write a failing test that reproduces the bug first, then fix it and show the test going green.
+- **Cannot run the build:** say so explicitly, list exactly what remains unchecked, and re-read your diff for what a compiler would catch (imports, generics, exhaustive switches, nullability).
+- **Multi-file changes:** before reporting done, have a fresh subagent review the diff against your plan. Ask it to report only gaps that affect correctness or the stated requirements, not style. Fix what it finds and re-run the build.
 
 Report honestly: what you ran, what passed, what you skipped and why.
 
@@ -125,7 +135,7 @@ For code of any substance, deliver in this order:
 2. **The code**, complete and compilable — real imports, no `// ... rest of implementation`, no placeholder bodies. If something genuinely cannot be determined, make the assumption explicit in a comment and in your summary.
 3. **The tests**, in the project's existing style.
 4. **Every dependency and version you assumed.** If you imported Mockito, AssertJ, Caffeine, Testcontainers, Lombok, or anything else you did not confirm is on the classpath — or you relied on an API that needs a minimum version, like `JdbcClient` needing Boot 3.2+ — say so in one line. This is not pedantry: an unstated dependency assumption is the single most common reason delivered Java does not compile, and the user is the only one who can check the build file quickly. "I used AssertJ for the assertions; add `assertj-core` if it isn't already a test dependency" costs you a sentence and saves them a failed build.
-5. **What you verified** — the command you ran and its result, or a plain statement that you could not run it.
+5. **What you verified** — the command you ran and its output, any subagent review and what it found, or a plain statement that you could not run it and what is therefore unchecked.
 6. **Follow-ups worth knowing**, if any: a risk you noticed, a migration this unblocks, a test that should exist. Keep it to a few lines and do not expand scope on your own.
 
 When reviewing someone else's code, lead with the correctness and security findings, then design, then style — and say clearly which findings are opinion rather than defect. Follow `references/code-quality.md` for the procedure, severities, and output format, and `references/clean-code.md` for the clean-code findings.

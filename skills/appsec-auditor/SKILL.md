@@ -1,6 +1,6 @@
 ---
 name: appsec-auditor
-description: Full-repository application security audit, done by the AI with nothing to install and with deterministic coverage. Scripts build a fixed checklist (rule hits, entry points, secrets including git history, dependencies checked against live OSV.dev and CISA KEV data), the AI verifies and decides every item, and a hook blocks completion until all are decided. Reviews code, IaC, containers, and CI/CD, analyzes how findings chain into real exploits, maps findings to CWE, OWASP Top 10 (2025), CWE Top 25, and ASVS 5.0, flags license and performance risks, and delivers a Markdown report, SARIF 2.1.0, optional GitLab reports, and proposed fixes. First-class for Java/Kotlin, Python, JS/TS (Node, plus Angular, React, and Vue front ends), C#/.NET, Go, Rust, Terraform, and AWS CDK. Use for "audit this repository", "full security audit", "AppSec audit of the codebase", "audit our dependencies", or "look for leaked secrets". Not for reviewing only a branch's pending changes, architecture documents, or live systems.
+description: Full-repository application security audit by the AI with nothing to install. Scripts build a fixed checklist (rule hits, entry points, secrets including git history, dependencies checked against live OSV.dev and CISA KEV data), the AI decides every item, and a hook blocks completion until all are decided. Covers code, IaC, containers, and CI/CD; chains findings into exploits; maps to CWE, OWASP Top 10, and ASVS; delivers a Markdown report, SARIF, and proposed fixes. First-class for Java/Kotlin, Python, JS/TS, C#/.NET, Go, Rust, Terraform, and AWS CDK. Use for "audit this repository", "full security audit", "AppSec audit of the codebase", "audit our dependencies", or "look for leaked secrets". Not for reviewing only a branch's pending changes, architecture documents, or live systems.
 allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-tools.sh) Bash(node ${CLAUDE_SKILL_DIR}/scripts/net-check.js) Bash(node ${CLAUDE_SKILL_DIR}/scripts/net-check.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/inventory.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/deps.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/coverage-check.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/sarif.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/secret-context.js *)
 ---
 
@@ -51,6 +51,8 @@ These hold for every run.
   - Create the empty marker file `<repo>/.appsec-audit/.active`, and write `<repo>/.appsec-audit/state.json` as `{"status": "running", "updatedAt": "<ISO time>"}`. While the marker exists, the skill's hooks enforce rules 3, 4, 6, 7, 8, and 10, log your reads, and run the coverage gate.
   - If `<repo>` is outside the session's project directory (another checkout, for example), also create `.appsec-audit/.active` in the session's project directory, containing `<repo>` on its own line. Otherwise the hooks can't find the audit.
   - The hooks ignore a marker older than 24 hours. If an audit runs longer, write the marker again.
+  - **Check the hooks are active.** Open `<repo>/README.md` (or any small file) with the **Read** tool, then use Glob to look for `<repo>/.appsec-audit/reads.jsonl`. If it exists, the hooks are on. If not, they didn't load (the skill was copied as a plain skill, or the workspace isn't trusted). Tell the user the guardrails and the read check aren't enforced and point to the README's install steps, then use `AskUserQuestion` to ask whether to enable them and restart, or continue without. If continuing, set `"hooks": false` in `state.json`, follow rules 3 to 10 by instruction alone, open every entry-point file with Read anyway, and say in the report that guardrails and the read check were **not enforced**.
+- **Interview the user first, in one batch.** Use `AskUserQuestion` with up to four questions with selectable answers, skipping any the request already answered: depth (Quick / Standard / Deep), target (repository root, or which projects in a monorepo), outputs (report only, plus SARIF, plus GitLab reports), and whether the audit may run project-code commands such as builds and tests (default: no, ask each time). Ask a second batch only if the answers raise new questions. Where `AskUserQuestion` isn't available, use the defaults below and say so in the report.
 - **Target**: the repository root unless the user names a path. **Always the whole tree as it stands.** If the user wants only their branch's pending changes reviewed, suggest `/security-review` instead.
 - **Depth**: **Standard** unless the user asks otherwise. Depth changes how deeply each item is analyzed and how much history is scanned, never whether an item gets a decision:
 
@@ -164,6 +166,8 @@ For each finding, give a minimal, idiomatic fix as a diff that matches the codeb
 
 **Leaked secrets and vulnerable dependencies** aren't fixed by a diff alone: follow `references/remediation.md` (revoke and rotate first; minimum fixed versions and overrides for transitive dependencies). Don't apply anything until the user approves.
 
+**Plan before applying.** When the user asks you to apply fixes, first present a short fix plan: the fixes in order, grouped by root cause, the files each touches, and the check that will prove each one (a re-run of `deps.js`, a local test, or a re-trace of the source-to-sink path). Mark every check that runs project code (rule 3); approving the plan counts as approval for exactly those. Get approval, then apply.
+
 ### 10. Report and close the gate
 
 1. Write `<repo>/.appsec-audit/findings.json` (format in `references/output.md`), then run `node ${CLAUDE_SKILL_DIR}/scripts/sarif.js --root <repo>` to render `results.sarif`. Write `report.md` using `references/output.md`.
@@ -174,7 +178,7 @@ For each finding, give a minimal, idiomatic fix as a diff that matches the codeb
 6. Give a short summary in chat: counts by severity, the top three things to fix, the coverage gaps, and pending offers (proof tests, applying fixes).
 7. When nothing is pending, write `state.json` as `"done"` and remove `.appsec-audit/.active` (and the project-directory marker, if you created one).
 
-**Waiting for the user mid-audit.** Ask with AskUserQuestion; it doesn't end the turn. Where it isn't available (a non-interactive run), don't wait: take the safe default (approval not given; dependencies marked not checked if the network fails), and say so in the report. If you must end the turn to wait (for example, for a proxy setting to be configured), first set `state.json` to `{"status": "paused", "reason": "...", "updatedAt": "..."}`, so the gate lets the turn end. Set it back to `"running"` when you resume.
+**Waiting for the user mid-audit.** Ask with AskUserQuestion; it doesn't end the turn. Where it isn't available (a non-interactive run), don't wait: take the safe default (approval not given; dependencies marked not checked if the network fails), and say so in the report. If you must end the turn to wait (for example, for a proxy setting to be configured), first set `state.json` to `{"status": "paused", "reason": "...", "updatedAt": "..."}` (keeping `"hooks": false` if you set it), so the gate lets the turn end. Set it back to `"running"` when you resume.
 
 ## Hooks
 
@@ -198,7 +202,7 @@ The hooks work with both the Bash and PowerShell tools, and with Windows paths. 
 
 ## After the report
 
-- **Applying fixes.** Apply only what the user accepts, one finding or one root cause at a time. Then re-check the code (re-run `deps.js` for dependency fixes) to confirm it's closed, and update the report.
+- **Applying fixes.** Apply only what the user accepts, one finding or one root cause at a time. Then verify each fix with the check named in the fix plan, and show the evidence (the command and its output, or the re-traced path with file:line). Re-run `deps.js` for dependency fixes. For a Critical or High fix, have a fresh subagent try to break it, as in step 6. Update the ledger and the report only once the evidence shows the finding is closed.
 - **Pushback.** If the user says a finding is wrong, re-check the code. Change the decision when they show a mitigation you missed (point to it) or a precondition that can't hold. Don't change it because the code is "internal", "behind a VPN", or "never called that way" unless the repository shows that. Record any such assumption in the ledger entry.
 - **Re-audits.** Item IDs are stable, so a later audit's ledger can be compared with this one item by item (`references/coverage.md`, "Comparing runs").
 

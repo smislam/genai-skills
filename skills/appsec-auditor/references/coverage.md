@@ -17,7 +17,7 @@ All in `.appsec-audit/` at the repository root:
 | `ledger.json` | **the AI** | One decision per checklist item |
 | `findings.json` | **the AI** | Every finding in structured form (`output.md`); the source for the SARIF |
 | `results.sarif` | `sarif.js` | Rendered from `findings.json`; never edited by hand |
-| `state.json` | **the AI** | `running`, `paused`, or `done` |
+| `state.json` | **the AI** | `running`, `paused`, or `done`; plus `"hooks": false` when the guardrail hooks didn't load, which turns the entry-point read check into a disclosed "not enforced" line instead of a gap |
 | `report.md` | **the AI** | The report (`output.md`) |
 
 The guard hook blocks edits to `coverage.json`, `deps.json`, and `reads.jsonl`, so the checklist can't be shrunk to pass the gate. To change them, re-run the script.

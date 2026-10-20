@@ -138,6 +138,8 @@ The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (No
 
 The hooks work with both the Bash and PowerShell tools and handle Windows paths. Because they're loaded as a plugin, Claude Code starts them on every matching event in every session; without an audit marker they exit immediately. To turn them off: `claude plugin disable appsec-auditor@skills-dir`.
 
+**If the hooks don't load** (a plain-skill copy, or an untrusted workspace), the skill detects it at the start of an audit and asks whether to enable them or continue. If you continue, the AI follows the rules by instruction alone, and the report says the guardrails and the entry-point read check were **not enforced**. Everything else, including the checklist, the ledger, and the coverage summary, works the same.
+
 ## Output
 
 Each audit writes to `.appsec-audit/` at the repository root:

@@ -1,6 +1,6 @@
 ---
 name: sounding-board
-description: Be an honest, rigorous sounding board for an idea, plan, proposal, or decision at any stage, including work not yet started — shape it if it's vague, make the strongest case for it, find what would sink it, check claims instead of guessing, and end with a clear call that backs a sound idea as firmly as it rejects a broken one, plus the cheapest test for what's unknown. Use when someone wants to think through, validate, challenge, or poke holes in something they're considering, even a half-formed idea — a product, an early architecture idea, a refactor, a vendor or tool, a go-to-market plan, a money or org decision, a career move. Trigger on "is this a good idea", "help me think through", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
+description: Be an honest, rigorous sounding board for an idea, plan, or decision at any stage, including half-formed ones — shape it, make the strongest case for it, find what would sink it, check claims instead of guessing, and end with a clear call plus the cheapest test for what's unknown. Use when someone wants to think through, validate, or challenge something they're considering — a product, an early architecture idea, a refactor, a vendor or tool, a go-to-market plan, a money or org decision, a career move. Trigger on "is this a good idea", "help me think through", "am I on the right track", "what am I missing", "tear this apart", "play devil's advocate", "would this work", "should I…", or a shared plan with a request for feedback. Not for formally scoring or approving an existing design document, proofreading, line-level code review, or generating ideas from scratch.
 ---
 
 # Sounding Board
@@ -71,7 +71,7 @@ Restate the idea in one sentence, in your words. Then name:
 
 Name a bias only when it's actually shaping the decision. And do it plainly, as a fact about the plan, not about the person.
 
-Ask a clarifying question only when the answer would change your verdict — at most two, and only up front. Otherwise proceed, but **make every assumption visible and ask the user to verify it**. A review built on a silent assumption the user would have corrected in five seconds is wasted, and the user cannot correct what they cannot see.
+Interview the user only when the answers would change your verdict, and only up front. Use `AskUserQuestion` with one batch of up to four questions with selectable answers (your best guess first), covering the unknowns that decide the call: the decision on the table, what success means, the key constraint, the alternative considered. Ask a second batch only if the first opens something decisive. Where `AskUserQuestion` isn't available, ask at most two plain questions. For everything else, proceed, but **make every assumption visible and ask the user to verify it**. A review built on a silent assumption the user would have corrected in five seconds is wasted, and the user cannot correct what they cannot see.
 
 For each assumption you make about the user's situation, goals, constraints, or context, record:
 
@@ -144,6 +144,8 @@ For the top one to three unknowns — the high-impact, low-confidence beliefs �
 Prefer tests that could fail. A test designed so that it can only confirm the idea is a ritual, not evidence.
 
 ### 8. Make the call
+
+**Check the draft call first.** Before committing to it, test it in a fresh pass. For each problem rated fatal or serious, confirm it traces to a [checked] or [reasoned] fact. Ask which single piece of evidence would flip the call, and whether it is [unknown]; if it is, the call is **Test first**. In a full review, the independent critics from step 4 are this check. In a quick take, do it yourself and fix the call if it fails.
 
 Score the idea using `references/rubric.md`, then give one decision:
 

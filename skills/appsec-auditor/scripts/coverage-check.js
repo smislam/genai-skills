@@ -109,7 +109,11 @@ function check(root) {
   }
   const entryFiles = [...new Set(items.filter((it) => it.kind === 'entrypoint').map((it) => it.file))].sort();
   const unread = entryFiles.filter((f) => !reads.some((r) => samePath(r, path.join(root, f))));
-  if (unread.length) gap('unread', `${unread.length} entry-point files were never opened with the Read tool.`, unread, unread.length);
+  // Without the track hook nothing logs reads, so the check can't be enforced. The audit
+  // records "hooks": false in state.json, and the summary then says so instead of failing.
+  const state = readJSON(path.join(auditDir, 'state.json')) || {};
+  const hooksOff = state.hooks === false;
+  if (unread.length && !hooksOff) gap('unread', `${unread.length} entry-point files were never opened with the Read tool.`, unread, unread.length);
 
   // Dependency lookups: a failure must be disclosed, not hidden.
   const reportPath = path.join(auditDir, 'report.md');
@@ -123,7 +127,7 @@ function check(root) {
     .update(items.map((it) => `${it.id}=${(decision.get(it.id) || {}).status || '-'}`).sort().join('\n'))
     .update(String(coverage.commit) + String(coverage.rulesVersion))
     .digest('hex').slice(0, 16);
-  const summary = renderSummary(coverage, deps, items, decision, entryFiles, unread, fingerprint);
+  const summary = renderSummary(coverage, deps, items, decision, entryFiles, unread, fingerprint, hooksOff);
   if (!report) {
     gap('report', 'No report.md yet.');
   } else {
@@ -159,7 +163,7 @@ function check(root) {
   return { complete: gaps.length === 0, gaps, summary, fingerprint, undecidedIds: undecided.map((it) => it.id) };
 }
 
-function renderSummary(coverage, deps, items, decision, entryFiles, unread, fingerprint) {
+function renderSummary(coverage, deps, items, decision, entryFiles, unread, fingerprint, hooksOff) {
   const count = (kind, status) => items.filter((it) => it.kind === kind && (status === undefined || (status === null ? !decision.has(it.id) : (decision.get(it.id) || {}).status === status))).length;
   const rows = KINDS.map((k) => {
     const n = count(k);
@@ -175,7 +179,9 @@ function renderSummary(coverage, deps, items, decision, entryFiles, unread, fing
     '|---|---|---|---|---|---|---|---|',
     ...rows,
     '',
-    `**Entry-point files read:** ${entryFiles.length - unread.length} of ${entryFiles.length}`,
+    hooksOff
+      ? `**Entry-point files read:** **not enforced** (the guardrail hooks were not active, so reads were not logged; ${entryFiles.length} entry-point files were to be opened by instruction only)`
+      : `**Entry-point files read:** ${entryFiles.length - unread.length} of ${entryFiles.length}`,
     `**Dependency data:** OSV.dev ${d.osv && d.osv.ok ? 'queried' : '**not checked**'}; KEV ${d.kev && d.kev.ok ? `catalog ${d.kev.catalogVersion}` : '**unknown**'}; EPSS ${d.epss && d.epss.ok ? 'scored' : '**not scored**'}`,
     '<!-- /appsec-coverage -->',
   ];

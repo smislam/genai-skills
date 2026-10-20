@@ -1,6 +1,6 @@
 ---
 name: architect-judge
-description: Act as an independent, blind architecture review board for an architecture that already exists as an artifact (solution or system design, reference architecture, pattern, trade-off analysis, cloud or migration strategy, ADR, diagrams, or infrastructure-as-code), judged strictly on what it contains. Score six dimensions — Architecture Alignment, a full question-level AWS Well-Architected review (all six pillars and matching lenses, security included), Architecture Quality, Data Management, Architecture Governance, and Compliance. Deliver an initial assessment, evidence-cited findings, strengths, critical issues and gaps, remediations, and a final approval status. Use when asked to review, assess, audit, score, approve, or sign off on an architecture, design, or technical strategy, or for an "ARB", "design authority", "Well-Architected review", "architecture gate", or "is this design production-ready". Not for ideas not yet designed or line-level code review.
+description: Act as an independent, blind architecture review board for an architecture that already exists as an artifact (solution design, reference architecture, pattern, trade-off analysis, cloud or migration strategy, ADR, diagrams, or infrastructure-as-code), judged strictly on what it contains. Scores six dimensions, including a full AWS Well-Architected review, and delivers evidence-cited findings, remediations, and a final approval status. Use when asked to review, assess, audit, score, approve, or sign off on an architecture, design, or technical strategy, or for an "ARB", "design authority", "Well-Architected review", "architecture gate", or "is this design production-ready". Not for ideas not yet designed or line-level code review.
 ---
 
 # Architect Judge
@@ -40,7 +40,8 @@ Before scoring anything, establish and report:
 - **Scope** — what is being judged and what isn't. Use the scope the requester declares (for example "security and compliance only", or "the ingestion subsystem"). Otherwise infer it from the artifact and state it. Scope narrows *what* is judged, never *how strictly*.
 - **Stated intent** — the business goals, requirements, and constraints the artifact itself claims. Quote or cite them; these are what Alignment is judged against.
 - **System profile** — workload type, deployment target (AWS, other cloud, hybrid, on-prem), data classes handled, user population, and geography, *as stated*. This profile decides which compliance regimes and Well-Architected lenses apply.
-- **Well-Architected depth** — a full review of every question is the default. If the artifact doesn't cover the operating model, ask the requester once whether they want a design-stage review instead (see `references/well-architected.md`); with no answer, keep the full review. Also list the lenses that will be applied.
+- **Well-Architected depth** — a full review of every question is the default. If the artifact doesn't cover the operating model, a design-stage review is the alternative (see `references/well-architected.md`). Also list the lenses that will be applied.
+- **Interview the requester about the process, once, in one batch.** Use `AskUserQuestion` with up to four selectable questions, skipping any the request already answered: scope (whole artifact or named parts), Well-Architected depth (full or design-stage), lenses to apply, and the compliance regime to judge against (or "infer from the artifact"). Without an answer, use the defaults above and say so. These are questions about the *review*, never about the *design*. Rule 2 stands: do not ask what the author meant, and do not accept spoken answers about the design as evidence.
 - **Is there an artifact?** This skill judges an architecture that has already been created. If what you were given is only an idea, a direction, or a few sentences with no design behind them, stop here. Say it isn't a reviewable artifact yet, list the minimum content from `references/dimensions.md` that a submission needs, and don't score anything. Scoring an idea as an empty document produces a meaningless Revise and Resubmit.
 - **Review readiness** — is the artifact complete enough to judge? Score readiness against the minimum content in `references/dimensions.md` ("Minimum reviewable content"). An artifact missing most of it is still judged, and it fails on the gaps. Say early that the low scores are driven by absence, not by bad decisions.
 - **First read** — two or three sentences: the overall shape of the design and your initial read of where the risk concentrates. This is an orientation, not the verdict.
@@ -60,7 +61,9 @@ Read `references/dimensions.md`. For each of the six dimensions, evaluate every 
 | Reliability | `references/wa-reliability.md` |
 | Performance Efficiency | `references/wa-performance-efficiency.md` |
 | Cost Optimization | `references/wa-cost-optimization.md` |
-| Sustainability | `references/wa-sustainability.md` | For each criterion, record:
+| Sustainability | `references/wa-sustainability.md` |
+
+For each criterion, record:
 
 - **Evidence**: the artifact location, or "not addressed".
 - **Assessment**: what is right or wrong, measured against the named standard or principle.
@@ -73,6 +76,8 @@ Adapt the criteria to the artifact type using the table in `references/dimension
 ### 4. Score
 
 Apply `references/scoring.md`: criterion scores, dimension scores, weighted overall score, then the **gates**. Gates override the arithmetic. A design scoring 85 overall with an unencrypted cardholder data store is not approved.
+
+**Self-check before the verdict.** Recompute every dimension score and the weighted total from the criterion scores, and show the working. Confirm each gate was tested and its result is recorded. Confirm each Critical finding cites an artifact location and a named standard. For each Critical finding, have a fresh subagent that sees only the artifact and the finding try to refute it (or, with no subagents, re-read the cited location yourself with that aim). Correct anything that fails, and say what changed.
 
 ### 5. Synthesize findings
 

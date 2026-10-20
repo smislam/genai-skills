@@ -32,7 +32,7 @@ How to run the full question-level review across all six pillars. The questions,
 
 **The default is a full review: every question in every pillar.** Don't skip questions on your own judgment.
 
-Seven questions are about the operating organization rather than the design: OPS 1, 2, 3, 9, and 11, COST 1, and SUS 6, each marked *(operating model)* in the pillar files. If the artifact doesn't cover the operating model, ask the requester once, before rating, whether they want a **design-stage review** instead:
+Seven questions are about the operating organization rather than the design: OPS 1, 2, 3, 9, and 11, COST 1, and SUS 6, each marked *(operating model)* in the pillar files. If the artifact doesn't cover the operating model, the requester is asked once, before rating, in the intake question batch (SKILL.md step 1), whether they want a **design-stage review** instead:
 
 > "This artifact doesn't describe the operating model (ownership, culture, operations reviews, cloud financial management). A full review rates those 7 questions, and they will mostly come out High risk. A design-stage review marks them N/A (out of scope: operating model) and lists them as Not assessed. Which do you want? If you don't say, it stays a full review."
 
