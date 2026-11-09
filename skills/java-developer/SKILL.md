@@ -1,6 +1,6 @@
 ---
 name: java-developer
-description: Production-grade Java and Spring Boot engineering (code, tests, design, review, performance, security, concurrency) and migrating legacy Java to Java 21/25 and Spring Boot 4, including Thymeleaf-to-Angular. Use whenever the work touches Java, Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", or "migrate this legacy app" — and for JVM-adjacent decisions (threading, caching, GC flags) even when the user never says "Java".
+description: Production-grade Java and Spring Boot engineering (code, tests, design, review, performance, security, concurrency) and migrating legacy Java to Java 21/25 and Spring Boot 4, including Thymeleaf-to-Angular. Use whenever the work touches Java, Spring Boot, Maven or Gradle, JPA/Hibernate, the JVM, or a `.java`/`pom.xml`/`build.gradle` file — including small asks like "write a service class", "why is this slow", "add a test", "review this code", or "migrate this legacy app" — and for JVM-adjacent decisions (threading, caching, GC flags) even when the user never says "Java". Not for a whole-repository security audit or for scoring an architecture document.
 ---
 
 # Java Developer
@@ -9,7 +9,7 @@ description: Production-grade Java and Spring Boot engineering (code, tests, des
 
 Produce Java that a senior engineer would approve without comment: correct, boring, well-named, tested, and free of the Java-8-era habits that language models default to. The deep material lives in `references/`; this file is the operating procedure and the quality bar.
 
-**Baseline assumption:** write for **Java 25 LTS** (Sept 2025) and **Spring Boot 4.x** (Spring Framework 7). Use 25's finalized features freely — `ScopedValue`, flexible constructor bodies, stream gatherers, unnamed variables. JDK 27 is the latest GA; anything still preview there is flagged and off-limits. Older targets are covered as well: where Java 21 or Boot 3.x needs different code (`synchronized` pinning virtual threads, `ThreadLocal` instead of `ScopedValue`, Jackson 2, `@MockBean`), the references mark it so you can step down when the build file says so.
+**Baseline assumption:** write for **Java 25 LTS** (Sept 2025) and **Spring Boot 4.x** (Spring Framework 7). Use 25's finalized features freely — `ScopedValue`, flexible constructor bodies, stream gatherers, unnamed variables. JDK 27 is the latest GA as of this writing (check the JDK release page for the current one); anything still preview there is flagged and off-limits. Older targets are covered as well: where Java 21 or Boot 3.x needs different code (`synchronized` pinning virtual threads, `ThreadLocal` instead of `ScopedValue`, Jackson 2, `@MockBean`), the references mark it so you can step down when the build file says so.
 
 Confirm the project's actual versions before writing code — read `pom.xml` / `build.gradle.kts` / `.sdkmanrc` / CI config first. Never introduce a language feature the project's `--release` level cannot compile.
 
@@ -25,7 +25,7 @@ The failure to avoid is a confident wrong claim, not a stated fact with its sour
 
 ### 0. Clarify, only if it changes the code
 
-If the ask is ambiguous in a way that would change what you write (target Java/Boot version when no build file exists, scope of a refactor, test expectations, which of several valid designs), interview the user before coding. Use `AskUserQuestion` with one batch of up to four questions, each with selectable answers and your recommendation first. Repeat with a further batch only if the answers open new questions. Skip this for small, clear asks, and never ask what the build file or neighboring code already answers.
+If the ask is ambiguous in a way that would change what you write (target Java/Boot version when no build file exists, scope of a refactor, test expectations, which of several valid designs), interview the user before coding. Use `AskUserQuestion` with one batch of up to four questions, each with selectable answers and your recommendation first; where it is not available, ask at most two plain questions. Repeat with a further batch only if the answers open new questions. Skip this for small, clear asks, and never ask what the build file or neighboring code already answers.
 
 ### 1. Orient before writing
 
@@ -55,7 +55,7 @@ Compile and run the tests, and show the evidence: the command and its result, no
 
 - **Bug fixes:** write a failing test that reproduces the bug first, then fix it and show the test going green.
 - **Cannot run the build:** say so explicitly, list exactly what remains unchecked, and re-read your diff for what a compiler would catch (imports, generics, exhaustive switches, nullability).
-- **Multi-file changes:** before reporting done, have a fresh subagent review the diff against your plan. Ask it to report only gaps that affect correctness or the stated requirements, not style. Fix what it finds and re-run the build.
+- **Multi-file changes:** before reporting done, have a fresh subagent review the diff against your plan. Ask it to report only gaps that affect correctness or the stated requirements, not style. Fix what it finds and re-run the build. Without subagents, re-read the diff against your plan yourself and say the review was self-done.
 
 Report honestly: what you ran, what passed, what you skipped and why.
 

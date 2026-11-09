@@ -11,9 +11,25 @@ set -u
 only_missing=0
 [ "${1:-}" = "--missing" ] && only_missing=1
 
+# Python 3.12+ runs the scripts and hooks. Find a launcher that is new enough: python3, python,
+# or the Windows launcher (py -3). If none is, fall back to the first one that runs at all.
+py_cmd=''
+py_ok=0
+for cand in 'python3' 'python' 'py -3'; do
+  set -- $cand
+  command -v "$1" >/dev/null 2>&1 || continue
+  if "$@" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' >/dev/null 2>&1 </dev/null; then
+    py_cmd=$cand
+    py_ok=1
+    break
+  fi
+  if [ -z "$py_cmd" ] && "$@" --version >/dev/null 2>&1 </dev/null; then py_cmd=$cand; fi
+done
+[ -z "$py_cmd" ] && py_cmd='python3'
+
 # category|tool|binary|version command
 tools='
-required|Node.js 18+ (scripts, hooks, gate)|node|node --version
+required|Python 3.12+ (scripts and hooks)|@PYBIN@|@PYCMD@ --version
 required|git|git|git --version
 required|curl (OSV.dev, KEV, EPSS, proxy)|curl|curl --version
 sast|Opengrep|opengrep|opengrep --version
@@ -45,6 +61,8 @@ iac|Hadolint|hadolint|hadolint --version
 iac|kube-linter|kube-linter|kube-linter version
 sbom|Syft|syft|syft version
 '
+tools=${tools//@PYBIN@/${py_cmd%% *}}
+tools=${tools//@PYCMD@/$py_cmd}
 
 printf '%-11s %-34s %-10s %s\n' CATEGORY TOOL STATUS VERSION
 printf '%s\n' "$tools" | while IFS='|' read -r cat name bin vcmd; do
@@ -64,9 +82,8 @@ printf '%s\n' "$tools" | while IFS='|' read -r cat name bin vcmd; do
 done
 
 echo
-major=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo 0)
-if [ "$major" -lt 18 ] 2>/dev/null; then
-  echo "Node.js 18+ is missing: the audit runs without the checklist and gate, and is labeled non-deterministic."
+if [ "$py_ok" != 1 ]; then
+  echo "Python 3.12+ is missing: the audit runs without the checklist and gate, and is labeled non-deterministic."
 fi
 echo "Scanners are optional: used only if already installed (references/tools.md)."
 echo "This skill never installs tools."

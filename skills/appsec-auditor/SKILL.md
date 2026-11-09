@@ -1,7 +1,7 @@
 ---
 name: appsec-auditor
 description: Full-repository application security audit by the AI, with nothing to install. Scripts build a fixed checklist (rule hits, entry points, secrets incl. git history, live OSV.dev and CISA KEV dependency data); the AI decides every item and a hook blocks completion until all are decided. Covers code, IaC, containers, and CI/CD, chains findings into exploits, and delivers a report, SARIF, and fixes. Use for "audit this repository", "full security audit", "audit our dependencies", or "look for leaked secrets". Not for reviewing only a branch's pending changes, architecture documents, or live systems.
-allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-tools.sh) Bash(node ${CLAUDE_SKILL_DIR}/scripts/net-check.js) Bash(node ${CLAUDE_SKILL_DIR}/scripts/net-check.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/inventory.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/deps.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/coverage-check.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/sarif.js *) Bash(node ${CLAUDE_SKILL_DIR}/scripts/secret-context.js *)
+allowed-tools: Bash(bash ${CLAUDE_SKILL_DIR}/scripts/check-tools.sh) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py *) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/inventory.py *) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/deps.py *) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py *) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py *) Bash(python3 -I ${CLAUDE_SKILL_DIR}/scripts/secret-context.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/inventory.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/deps.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py *) Bash(python -I ${CLAUDE_SKILL_DIR}/scripts/secret-context.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/inventory.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/deps.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py *) Bash(py -3 -I ${CLAUDE_SKILL_DIR}/scripts/secret-context.py *)
 ---
 
 # AppSec Auditor
@@ -34,9 +34,9 @@ These hold for every run.
 7. **Redact secrets everywhere**: reports, SARIF, the ledger, and chat. Show the type, the location, and at most 4 characters.
 8. **Never modify code without approval.** Fixes are proposed as diffs, and applied only when the user accepts them.
 9. **Current vulnerability data only.**
-   - **Check every dependency** with `deps.js`, which queries OSV.dev live, downloads the current CISA KEV catalog, and scores CVEs with EPSS.
+   - **Check every dependency** with `deps.py`, which queries OSV.dev live, downloads the current CISA KEV catalog, and scores CVEs with EPSS.
    - **Never report a CVE, or the absence of one, from model memory.** Your training data is months or years old.
-   - **If a lookup fails** (offline, blocked by a firewall, rate-limited), run `net-check.js` to diagnose it, tell the user which proxy setting to fix (`references/dependencies.md`, "Proxies"), and say at the top of the report that dependency results are **not checked**. Don't call them clean.
+   - **If a lookup fails** (offline, blocked by a firewall, rate-limited), run `net-check.py` to diagnose it, tell the user which proxy setting to fix (`references/dependencies.md`, "Proxies"), and say at the top of the report that dependency results are **not checked**. Don't call them clean.
 10. **Never report findings outside the machine.** Don't open issues or pull requests, file security advisories, email maintainers, post to vulnerability databases, or contact anyone about a finding, in this repository or any other, including third-party and open-source projects. The report goes to the user only. When a finding looks like a new vulnerability in a third-party package, say so in the report and leave what to do about it to the user.
 
 ## Procedure
@@ -65,23 +65,23 @@ These hold for every run.
 ### 2. Check the machine and the network
 
 1. Run `bash ${CLAUDE_SKILL_DIR}/scripts/check-tools.sh` (macOS, Linux, Git Bash) or `powershell -NoProfile -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}/scripts/check-tools.ps1"` (Windows). It reports what's present:
-   - **Node.js 18+**, which deterministic mode requires. Without it, the scripts, hooks, and gate can't run. Tell the user, continue by instruction alone using `references/dependencies.md` and `references/secrets.md`, and label the report **non-deterministic: coverage not enforced**.
+   - **Python 3.12 or newer**, which deterministic mode requires. Without it, the scripts, hooks, and gate can't run. Tell the user, continue by instruction alone using `references/dependencies.md` and `references/secrets.md`, and label the report **non-deterministic: coverage not enforced**.
    - **`git` and `curl`**, also required.
    - **Already-installed scanners** (optional extra candidates; `references/tools.md`).
 
    Never suggest installing anything.
-2. Run `node ${CLAUDE_SKILL_DIR}/scripts/net-check.js`. It tests OSV.dev, CISA KEV, FIRST EPSS, and Maven Central through the configured proxy, and says exactly what's wrong if any fails: DNS, proxy authentication, TLS inspection, or a blocked URL.
+2. Run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py`. It tests OSV.dev, CISA KEV, FIRST EPSS, and Maven Central through the configured proxy, and says exactly what's wrong if any fails: DNS, proxy authentication, TLS inspection, or a blocked URL.
    - **If OSV.dev, KEV, or EPSS fails:** show the user the fix from `references/dependencies.md`, "Proxies" (for example `HTTPS_PROXY`, `APPSEC_PROXY_AUTH=negotiate`, or `APPSEC_CA_BUNDLE`). Ask with AskUserQuestion whether they want to set it and retry, or continue with dependencies marked **not checked**.
    - **If only Maven Central fails:** it affects only Maven and Gradle version resolution, and the inventory reports those versions as unresolved.
 
 ### 3. Build the checklist
 
-1. `node ${CLAUDE_SKILL_DIR}/scripts/inventory.js --root <repo> --depth <depth>` writes `coverage.json`. It contains:
+1. `python3 -I ${CLAUDE_SKILL_DIR}/scripts/inventory.py --root <repo> --depth <depth>` writes `coverage.json`. It contains:
    - the scanned files;
    - every rule hit, with its kind: `entrypoint`, `pattern`, `secret`, or `secret-history`;
    - the packages parsed from lockfiles and manifests, including Maven parent and BOM versions resolved from Maven Central;
    - the dependencies that couldn't be resolved.
-2. `node ${CLAUDE_SKILL_DIR}/scripts/deps.js --root <repo>` writes `deps.json`, with one `dependency` item for each package advisory, carrying its KEV status, EPSS score, and fixed versions.
+2. `python3 -I ${CLAUDE_SKILL_DIR}/scripts/deps.py --root <repo>` writes `deps.pyon`, with one `dependency` item for each package advisory, carrying its KEV status, EPSS score, and fixed versions.
 3. If any already-installed scanner applies (`references/tools.md`), run it now as well. Its results are extra candidates, not checklist items. Record each one you confirm as a finding.
 
 Read the printed summary. If the checklist looks wrong for the repository (for example, a whole stack has no hits, or thousands of hits come from one generated folder), tell the user, and don't hand-edit `coverage.json`. Generated or vendored folders the exclusions missed can be decided with a group entry (`references/coverage.md`).
@@ -97,7 +97,7 @@ Every finding refers back to this map. Keep it brief, in the report's coverage s
 
 ### 5. Work the checklist
 
-Read `references/vuln-classes.md`, plus each item's `guide` (listed below), and decide every item in `coverage.json` and `deps.json`:
+Read `references/vuln-classes.md`, plus each item's `guide` (listed below), and decide every item in `coverage.json` and `deps.pyon`:
 
 | Stack | Guide |
 |---|---|
@@ -117,10 +117,10 @@ Read `references/vuln-classes.md`, plus each item's `guide` (listed below), and 
 | Tagging findings: CWE, OWASP Top 10 (2025), CWE Top 25, API, LLM, agentic, and CI/CD lists, ASVS 5.0, CVSS, EPSS, KEV | `references/standards.md` |
 
 - **Entry points.** Open each entry-point file with the **Read** tool (the read log is evidence; `cat` doesn't count). Trace its input to its sinks, and check its authentication and authorization at the route, object, and property level. Decide it `reviewed` (with what you checked) or `finding`.
-- **Patterns and secrets.** Verify each hit with `references/triage.md`. Look at secret items with `secret-context.js`, which redacts the values (`references/secrets.md`), never with `git show`.
+- **Patterns and secrets.** Verify each hit with `references/triage.md`. Look at secret items with `secret-context.py`, which redacts the values (`references/secrets.md`), never with `git show`.
 - **Dependencies.** Judge reachability with `references/dependencies.md`.
 - **Beyond the checklist.** While tracing, look for what no rule can match: business logic and races, crypto design, fail-open error handling, second-order injection, resource exhaustion, CI/CD trust, and LLM or agent code. Report those as findings too.
-- **Record decisions as you go** in `<repo>/.appsec-audit/ledger.json` (format in `references/coverage.md`). Run `node ${CLAUDE_SKILL_DIR}/scripts/coverage-check.js --root <repo>` at any time to see what's left, or add `--list --undecided` to see the remaining items.
+- **Record decisions as you go** in `<repo>/.appsec-audit/ledger.json` (format in `references/coverage.md`). Run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py --root <repo>` at any time to see what's left, or add `--list --undecided` to see the remaining items.
 
 **Read only what the review needs.** Read the files on the paths you trace. Read a long file in the ranges that matter, and don't reread a file you already have. Skip vendored, generated, and minified code unless a checklist item points there.
 
@@ -166,15 +166,15 @@ For each finding, give a minimal, idiomatic fix as a diff that matches the codeb
 
 **Leaked secrets and vulnerable dependencies** aren't fixed by a diff alone: follow `references/remediation.md` (revoke and rotate first; minimum fixed versions and overrides for transitive dependencies). Don't apply anything until the user approves.
 
-**Plan before applying.** When the user asks you to apply fixes, first present a short fix plan: the fixes in order, grouped by root cause, the files each touches, and the check that will prove each one (a re-run of `deps.js`, a local test, or a re-trace of the source-to-sink path). Mark every check that runs project code (rule 3); approving the plan counts as approval for exactly those. Get approval, then apply.
+**Plan before applying.** When the user asks you to apply fixes, first present a short fix plan: the fixes in order, grouped by root cause, the files each touches, and the check that will prove each one (a re-run of `deps.py`, a local test, or a re-trace of the source-to-sink path). Mark every check that runs project code (rule 3); approving the plan counts as approval for exactly those. Get approval, then apply.
 
 ### 10. Report and close the gate
 
-1. Write `<repo>/.appsec-audit/findings.json` (format in `references/output.md`), then run `node ${CLAUDE_SKILL_DIR}/scripts/sarif.js --root <repo>` to render `results.sarif`. Write `report.md` using `references/output.md`.
-2. Run `node ${CLAUDE_SKILL_DIR}/scripts/coverage-check.js --root <repo> --summary`, and paste its output verbatim into the report's Coverage section. The numbers come from the script, not from you. Re-paste after any ledger change.
+1. Write `<repo>/.appsec-audit/findings.json` (format in `references/output.md`), then run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py --root <repo>` to render `results.sarif`. Write `report.md` using `references/output.md`.
+2. Run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py --root <repo> --summary`, and paste its output verbatim into the report's Coverage section. The numbers come from the script, not from you. Re-paste after any ledger change.
 3. When the user wants findings in GitLab, also write the GitLab security reports (`references/gitlab-report.md`).
 4. Before writing, tell the user the directory should be git-ignored, and offer to add it to `.gitignore`.
-5. Run `coverage-check.js` until it reports **complete**. The Stop hook enforces this: if you try to finish early, it sends you back with the list of gaps.
+5. Run `coverage-check.py` until it reports **complete**. The Stop hook enforces this: if you try to finish early, it sends you back with the list of gaps.
 6. Give a short summary in chat: counts by severity, the top three things to fix, the coverage gaps, and pending offers (proof tests, applying fixes).
 7. When nothing is pending, write `state.json` as `"done"` and remove `.appsec-audit/.active` (and the project-directory marker, if you created one).
 
@@ -182,27 +182,27 @@ For each finding, give a minimal, idiomatic fix as a diff that matches the codeb
 
 ## Hooks
 
-This skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`, loaded as `appsec-auditor@skills-dir`). Its hooks need Node.js, and all of them do nothing unless `.appsec-audit/.active` exists.
+This skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`, loaded as `appsec-auditor@skills-dir`). Its hooks need Python 3.12 or newer (they run `python3 -I`; on Windows change the hook command to `py` with `-3` as the first argument), and all of them do nothing unless `.appsec-audit/.active` exists.
 
 | Hook | Action | Decision | Rule |
 |---|---|---|---|
-| `PreToolUse` (`guard.js`) | Commands that execute project code (package installs and scripts, builds, tests, `cdk synth`, `terraform init/plan`, `cargo build/clippy`, `dotnet restore`, `docker build`) | Ask the user | 3 |
-| | Running a script by path (`bash x.sh`, `node x.js`, `python x.py`, `./run`, `& .\build.ps1`), except this skill's own scripts and files in `.appsec-audit/` | Ask the user | 3 |
+| `PreToolUse` (`guard.py`) | Commands that execute project code (package installs and scripts, builds, tests, `cdk synth`, `terraform init/plan`, `cargo build/clippy`, `dotnet restore`, `docker build`) | Ask the user | 3 |
+| | Running a script by path (`bash x.sh`, `node x.js`, `python x.py`, `py -3 x.py`, `./run`, `& .\build.ps1`), except this skill's own scripts and files in `.appsec-audit/` | Ask the user | 3 |
 | | Secret verification, `semgrep --config auto`, Opengrep without local rules, cloud scanners that upload code | Ask the user | 4 |
 | | Downloading a script and piping it into a shell (`curl … \| sh`, `iwr … \| iex`) | Deny | 6 |
 | | Writing an unredacted secret into `.appsec-audit/` | Deny | 7 |
-| | Editing `coverage.json`, `deps.json`, or `reads.jsonl` (written only by the scripts and hooks) | Deny | gate |
+| | Editing `coverage.json`, `deps.pyon`, or `reads.jsonl` (written only by the scripts and hooks) | Deny | gate |
 | | Editing any file outside `.appsec-audit/` (fixes, proof tests, `.gitignore`) | Ask the user | 8 |
 | | Creating issues, pull requests, comments, or advisories (`gh`, `glab`, their APIs), or sending email | Deny | 10 |
 | | `git push` | Ask the user | 10 |
-| `PostToolUse` (`track.js`) | Logs every file opened with Read to `reads.jsonl` | — | gate |
-| `Stop` (`gate.js`) | Blocks finishing until `coverage-check.js` reports complete, unless `state.json` is `paused` | Block | gate |
+| `PostToolUse` (`track.py`) | Logs every file opened with Read to `reads.jsonl` | — | gate |
+| `Stop` (`gate.py`) | Blocks finishing until `coverage-check.py` reports complete, unless `state.json` is `paused` | Block | gate |
 
 The hooks work with both the Bash and PowerShell tools, and with Windows paths. They're a safety net, not a substitute for the rules: follow the rules whether or not the hooks run. If the user approves a prompt, proceed. If a prompt is denied, don't look for another way to run the same thing.
 
 ## After the report
 
-- **Applying fixes.** Apply only what the user accepts, one finding or one root cause at a time. Then verify each fix with the check named in the fix plan, and show the evidence (the command and its output, or the re-traced path with file:line). Re-run `deps.js` for dependency fixes. For a Critical or High fix, have a fresh subagent try to break it, as in step 6. Update the ledger and the report only once the evidence shows the finding is closed.
+- **Applying fixes.** Apply only what the user accepts, one finding or one root cause at a time. Then verify each fix with the check named in the fix plan, and show the evidence (the command and its output, or the re-traced path with file:line). Re-run `deps.py` for dependency fixes. For a Critical or High fix, have a fresh subagent try to break it, as in step 6. Update the ledger and the report only once the evidence shows the finding is closed.
 - **Pushback.** If the user says a finding is wrong, re-check the code. Change the decision when they show a mitigation you missed (point to it) or a precondition that can't hold. Don't change it because the code is "internal", "behind a VPN", or "never called that way" unless the repository shows that. Record any such assumption in the ledger entry.
 - **Re-audits.** Item IDs are stable, so a later audit's ledger can be compared with this one item by item (`references/coverage.md`, "Comparing runs").
 

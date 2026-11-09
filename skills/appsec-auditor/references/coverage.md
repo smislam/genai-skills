@@ -2,7 +2,7 @@
 
 The AI's judgment varies between runs, but *what gets examined* doesn't. Scripts build a fixed checklist from the repository, the AI records a decision for every item, and a Stop hook won't let the audit finish until every item is decided and the evidence is in place. The same commit, rules version, and depth always give the same checklist, so two audits can be compared item by item.
 
-Requires Node.js 18 or later (not installed by the skill). Without it, run the audit by instruction alone, and label the report **non-deterministic: coverage not enforced** at the top.
+Requires Python 3.12 or newer (not installed by the skill). Without it, run the audit by instruction alone, and label the report **non-deterministic: coverage not enforced** at the top.
 
 ## Files
 
@@ -10,21 +10,21 @@ All in `.appsec-audit/` at the repository root:
 
 | File | Written by | Contents |
 |---|---|---|
-| `coverage.json` | `inventory.js` | The checklist: files scanned, every rule hit (`items`), packages, and unresolved dependencies |
-| `files.txt` | `inventory.js` | The exact list of files scanned |
-| `deps.json` | `deps.js` | OSV, KEV, and EPSS results, plus one `dependency` item per package advisory |
+| `coverage.json` | `inventory.py` | The checklist: files scanned, every rule hit (`items`), packages, and unresolved dependencies |
+| `files.txt` | `inventory.py` | The exact list of files scanned |
+| `deps.pyon` | `deps.py` | OSV, KEV, and EPSS results, plus one `dependency` item per package advisory |
 | `reads.jsonl` | the `track` hook | Every file the AI opened with the Read tool |
 | `ledger.json` | **the AI** | One decision per checklist item |
 | `findings.json` | **the AI** | Every finding in structured form (`output.md`); the source for the SARIF |
-| `results.sarif` | `sarif.js` | Rendered from `findings.json`; never edited by hand |
+| `results.sarif` | `sarif.py` | Rendered from `findings.json`; never edited by hand |
 | `state.json` | **the AI** | `running`, `paused`, or `done`; plus `"hooks": false` when the guardrail hooks didn't load, which turns the entry-point read check into a disclosed "not enforced" line instead of a gap |
 | `report.md` | **the AI** | The report (`output.md`) |
 
-The guard hook blocks edits to `coverage.json`, `deps.json`, and `reads.jsonl`, so the checklist can't be shrunk to pass the gate. To change them, re-run the script.
+The guard hook blocks edits to `coverage.json`, `deps.pyon`, and `reads.jsonl`, so the checklist can't be shrunk to pass the gate. To change them, re-run the script.
 
 ## The checklist
 
-`node ${CLAUDE_SKILL_DIR}/scripts/inventory.js --root <repo> --depth <quick|standard|deep>` writes `coverage.json`. Each item has a stable ID that survives line shifts:
+`python3 -I ${CLAUDE_SKILL_DIR}/scripts/inventory.py --root <repo> --depth <quick|standard|deep>` writes `coverage.json`. Each item has a stable ID that survives line shifts:
 
 | Kind | ID | From | What a decision means |
 |---|---|---|---|
@@ -32,7 +32,7 @@ The guard hook blocks edits to `coverage.json`, `deps.json`, and `reads.jsonl`, 
 | `pattern` | `C-…` | Sink and misconfiguration rules | The hit is a vulnerability, or isn't, and why |
 | `secret` | `C-…` | Secret rules over the working tree | A real credential or not; the excerpt is redacted |
 | `secret-history` | `H-…` | Secret rules over every commit (Standard and Deep) | Same, for secrets added anywhere in history |
-| `dependency` | `D-…` | `deps.js`: one per package, version, and advisory | Affected and reachable, not affected, or needs review |
+| `dependency` | `D-…` | `deps.py`: one per package, version, and advisory | Affected and reachable, not affected, or needs review |
 
 The rules live in `rules/rules.json`; its `version` is recorded in the report. Each item names its `rule`, `cwe`, `file`, `line`, an `excerpt`, and the `guide` to read when deciding it.
 
@@ -66,16 +66,16 @@ The rules live in `rules/rules.json`; its `version` is recorded in the report. E
 
 ## The gate
 
-`node ${CLAUDE_SKILL_DIR}/scripts/coverage-check.js --root <repo>` reports exactly what's left. Add `--list` (optionally `--undecided` or `--kind <kind>`) for a compact view of the checklist itself: ID, kind, location, and excerpt, one per line. The Stop hook runs the same check, and blocks the end of the turn until it passes. The audit is complete when:
+`python3 -I ${CLAUDE_SKILL_DIR}/scripts/coverage-check.py --root <repo>` reports exactly what's left. Add `--list` (optionally `--undecided` or `--kind <kind>`) for a compact view of the checklist itself: ID, kind, location, and excerpt, one per line. The Stop hook runs the same check, and blocks the end of the turn until it passes. The audit is complete when:
 
-1. `coverage.json` exists and matches the current commit (re-run `inventory.js` if the code changed).
-2. `deps.json` exists whenever there are packages. If OSV.dev couldn't be reached, the report says dependency results are "not checked".
+1. `coverage.json` exists and matches the current commit (re-run `inventory.py` if the code changed).
+2. `deps.pyon` exists whenever there are packages. If OSV.dev couldn't be reached, the report says dependency results are "not checked".
 3. Every ledger entry is valid, and refers to an item in the current checklist.
 4. Every checklist item has a decision.
 5. Every entry-point file was opened with the **Read** tool. Read it through the tool, not with `cat`, so the read log records it.
-6. `report.md` exists, contains every finding ID used in the ledger, and contains the **current** coverage summary: run `coverage-check.js --summary` and paste its output into the Coverage section. The summary carries a fingerprint of the checklist and the decisions, so re-paste it after any ledger change.
+6. `report.md` exists, contains every finding ID used in the ledger, and contains the **current** coverage summary: run `coverage-check.py --summary` and paste its output into the Coverage section. The summary carries a fingerprint of the checklist and the decisions, so re-paste it after any ledger change.
 7. `findings.json` exists, contains every finding ID used in the ledger, and every finding has an ID, title, severity, confidence, and location.
-8. `results.sarif` is exactly what `sarif.js` renders from the current `findings.json`.
+8. `results.sarif` is exactly what `sarif.py` renders from the current `findings.json`.
 
 **Pausing.** Ask mid-audit questions with the AskUserQuestion tool, which doesn't end the turn. If you must end the turn to wait for the user, first write `state.json` as `{"status": "paused", "reason": "<what you're waiting for>", "updatedAt": "<ISO time>"}`, and set it back to `"running"` when the audit resumes. A paused audit older than 24 hours is treated as running again.
 

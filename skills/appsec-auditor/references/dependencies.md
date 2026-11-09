@@ -2,8 +2,8 @@
 
 Known vulnerabilities in third-party packages come from **live data only** (SKILL.md rule 9). You can't know them from memory. The scripts collect the data deterministically; you judge reachability and decide each item.
 
-1. `inventory.js` parses lockfiles and manifests into `coverage.json` → `packages` (and `unresolved`).
-2. `deps.js` queries OSV.dev for every package, downloads the current CISA KEV catalog, scores CVEs with EPSS, and writes `deps.json` with one `dependency` item per package advisory.
+1. `inventory.py` parses lockfiles and manifests into `coverage.json` → `packages` (and `unresolved`).
+2. `deps.py` queries OSV.dev for every package, downloads the current CISA KEV catalog, scores CVEs with EPSS, and writes `deps.pyon` with one `dependency` item per package advisory.
 3. You decide each item: affected and reachable (`finding`), not affected (`false_positive` with the evidence), or `needs_review`.
 
 Only package names, versions, CVE IDs, and Maven coordinates leave the machine (rule 4).
@@ -34,7 +34,7 @@ For Maven and Gradle transitive dependencies, offer one of these:
 
 ## Proxies and firewalls
 
-All the scripts' network calls go through `curl`, which ships with macOS, Linux, Git Bash, and Windows 10+. Run `node ${CLAUDE_SKILL_DIR}/scripts/net-check.js` to test the endpoints. It names the problem when one fails. Then tell the user the matching setting. These are environment variables, so they must be set in the environment Claude Code runs in (then restart the session), or in Claude Code's `env` settings.
+All the scripts' network calls go through `curl`, which ships with macOS, Linux, Git Bash, and Windows 10+. Run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/net-check.py` to test the endpoints. It names the problem when one fails. Then tell the user the matching setting. These are environment variables, so they must be set in the environment Claude Code runs in (then restart the session), or in Claude Code's `env` settings.
 
 | Problem `net-check` reports | Setting |
 |---|---|
@@ -45,11 +45,11 @@ All the scripts' network calls go through `curl`, which ships with macOS, Linux,
 | `blocked` (HTTP 403), or no internet access at all | Point the skill at internal mirrors: `APPSEC_OSV_URL` (an OSV-compatible API), `APPSEC_KEV_URL` (a copy of the KEV JSON feed), `APPSEC_EPSS_URL`, and `APPSEC_MAVEN_URL` (an Artifactory, Nexus, or other Maven Central mirror) |
 | `not-json` | The proxy returned a login or block page instead of the API response. Ask for `api.osv.dev`, `www.cisa.gov`, and `api.first.org` to be allowed, or use mirrors |
 
-If a setting can't be fixed now, continue. `deps.json` records the failure, and the report must say dependency results are **not checked** (the gate enforces it).
+If a setting can't be fixed now, continue. `deps.pyon` records the failure, and the report must say dependency results are **not checked** (the gate enforces it).
 
 ## Deciding dependency items
 
-Each `dependency` item in `deps.json` carries: package, version, file, direct or transitive, the advisory ID, its CVEs, severity, fixed versions, KEV status (`null` = not listed, `"unknown"` = KEV couldn't be fetched), and EPSS.
+Each `dependency` item in `deps.pyon` carries: package, version, file, direct or transitive, the advisory ID, its CVEs, severity, fixed versions, KEV status (`null` = not listed, `"unknown"` = KEV couldn't be fetched), and EPSS.
 
 **Reachability, with evidence:**
 1. Read the advisory's details for the vulnerable component: a class, function, module, configuration option, or feature (for example "JNDI lookup in message patterns", "`yaml.load` without a `SafeLoader`").
@@ -62,7 +62,7 @@ Each `dependency` item in `deps.json` carries: package, version, file, direct or
 
 **Ranking:** `triage.md`, "Dependency findings": KEV first, then reachability, EPSS, and CVSS. One upgrade usually fixes several advisories, so report the **minimum version that fixes all of them** (from the `fixed` lists), and use `remediation.md` for the upgrade path.
 
-## Manual procedure (non-deterministic mode, without Node.js)
+## Manual procedure (non-deterministic mode, without Python)
 
 1. Build the package list from the lockfiles by reading them.
 2. `POST {APPSEC_OSV_URL or https://api.osv.dev/v1}/querybatch` with `{"queries": [{"package": {"ecosystem": "...", "name": "..."}, "version": "..."}]}` (up to 1000 per request), then `GET .../vulns/<id>` for each distinct ID.

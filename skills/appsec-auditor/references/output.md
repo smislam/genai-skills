@@ -11,8 +11,8 @@ Every run produces two artifacts, and proposed fixes when there are findings:
 .appsec-audit/
 ├── report.md          # human-readable report (template below)
 ├── results.sarif      # SARIF 2.1.0, verified findings only
-├── coverage.json      # the deterministic checklist (inventory.js)
-├── deps.json          # OSV, KEV, and EPSS results (deps.js)
+├── coverage.json      # the deterministic checklist (inventory.py)
+├── deps.pyon          # OSV, KEV, and EPSS results (deps.py)
 ├── ledger.json        # your decision for every checklist item
 ├── reads.jsonl        # files you opened (track hook)
 ├── state.json         # running / paused / done
@@ -45,7 +45,7 @@ Lead with the verdict. A reader who stops after the summary should know how bad 
 
 ## Coverage
 
-<Paste the output of `node scripts/coverage-check.js --root <repo> --summary` here, verbatim. It's the deterministic checklist summary, and the coverage gate checks it's present and current. If Node.js wasn't available, write "**Non-deterministic: coverage not enforced**" instead.>
+<Paste the output of `python3 -I scripts/coverage-check.py --root <repo> --summary` here, verbatim. It's the deterministic checklist summary, and the coverage gate checks it's present and current. If Python wasn't available, write "**Non-deterministic: coverage not enforced**" instead.>
 
 | Category | How it was covered | Coverage |
 |---|---|---|
@@ -117,7 +117,7 @@ State plainly that this is an AI-led review: thorough where it looked, but not e
 
 ## findings.json
 
-`findings.json` holds every finding in structured form. `sarif.js` renders `results.sarif` from it, deterministically, and the gate checks the two match. Write it alongside the report:
+`findings.json` holds every finding in structured form. `sarif.py` renders `results.sarif` from it, deterministically, and the gate checks the two match. Write it alongside the report:
 
 ```json
 {
@@ -144,9 +144,9 @@ State plainly that this is an AI-led review: thorough where it looked, but not e
 - **Optional:** `cwe`, `owasp`, `cvss` (the estimated vector), `cvssScore`, `message` (one sentence), `path` (source-to-sink steps), `fix` (Markdown), and `chain` (member finding IDs, for chains).
 - **Redact secrets** in every field (rule 7).
 
-Then run `node ${CLAUDE_SKILL_DIR}/scripts/sarif.js --root <repo>`. Never edit `results.sarif` by hand; change `findings.json` and re-run.
+Then run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py --root <repo>`. Never edit `results.sarif` by hand; change `findings.json` and re-run.
 
-**What `sarif.js` produces:**
+**What `sarif.py` produces:**
 - one run, with the tool name `appsec-auditor` and the commit;
 - one rule per finding type (`appsec/<cwe>-<title>`), carrying `security-severity` (from the CVSS score, or the severity level) and CWE and OWASP tags;
 - `level` from the severity: Critical and High → `error`, Medium → `warning`, Low and Info → `note`;

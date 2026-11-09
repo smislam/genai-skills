@@ -1,5 +1,5 @@
 {
-  "description": "appsec-auditor guardrails, read tracking, and coverage gate. All inert unless <repo>/.appsec-audit/.active exists.",
+  "description": "appsec-auditor guardrails, read tracking, and coverage gate. All inert unless <repo>/.appsec-audit/.active exists. Runs Python 3.12 or newer; on Windows the command is `py` with `-3` as the first argument.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,8 +7,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/guard.js"],
+            "command": "python3",
+            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/guard.py"],
             "timeout": 10
           }
         ]
@@ -20,8 +20,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/track.js"],
+            "command": "python3",
+            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/track.py"],
             "timeout": 10
           }
         ]
@@ -32,8 +32,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate.js"],
+            "command": "python3",
+            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/gate.py"],
             "timeout": 60
           }
         ]

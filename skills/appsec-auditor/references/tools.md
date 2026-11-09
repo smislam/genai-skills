@@ -36,7 +36,7 @@ Commands and cautions were verified against official sources on 2026-10-15. Writ
 
 ### Dependencies
 
-These are cross-checks; `deps.js` (OSV.dev, KEV, EPSS) is the source of record.
+These are cross-checks; `deps.py` (OSV.dev, KEV, EPSS) is the source of record.
 
 | Tool | Command |
 |---|---|

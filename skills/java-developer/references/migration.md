@@ -68,7 +68,7 @@ mvn org.openrewrite.maven:rewrite-maven-plugin:run \
   -Drewrite.activeRecipes=org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_5
 ```
 
-Always run it on a clean branch, read the entire diff, and keep it in its own commit. Treat the output as a very good first draft, not as correct by construction — recipe names and availability also change, so check the catalog for the current recipe id rather than trusting a remembered one.
+The commands above leave the plugin version unpinned, so Maven resolves whatever is newest and runs recipe code that rewrites your source. Look up the current `rewrite-maven-plugin` release and pin it (`org.openrewrite.maven:rewrite-maven-plugin:<version>:run`) so the run is repeatable and reviewable. Always run it on a clean branch, read the entire diff, and keep it in its own commit. Treat the output as a very good first draft, not as correct by construction — recipe names and availability also change, so check the catalog for the current recipe id rather than trusting a remembered one.
 
 - **`jdeps --jdk-internals`** finds dependencies on JDK internal APIs that strong encapsulation will reject.
 - **`jdeprscan --release <N>`** finds use of deprecated and removed APIs.

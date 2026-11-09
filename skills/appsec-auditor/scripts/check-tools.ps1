@@ -9,8 +9,24 @@ Read-only: runs each tool's version command, nothing else.
 #>
 param([switch]$Missing)
 
+# Python 3.12+ runs the scripts and hooks. Find a launcher that is new enough: python3, python,
+# or the Windows launcher (py -3). If none is, fall back to the first one that runs at all.
+$pyBin = $null; $pyArgs = @(); $pyOk = $false
+foreach ($cand in @(@('python3'), @('python'), @('py', '-3'))) {
+  if (-not (Get-Command $cand[0] -ErrorAction SilentlyContinue)) { continue }
+  $extra = @($cand | Select-Object -Skip 1)
+  $global:LASTEXITCODE = 0
+  & $cand[0] @extra -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' 2>&1 | Out-Null
+  if ($LASTEXITCODE -eq 0) { $pyBin = $cand[0]; $pyArgs = $extra; $pyOk = $true; break }
+  $global:LASTEXITCODE = 0
+  & $cand[0] @extra --version 2>&1 | Out-Null
+  if ($null -eq $pyBin -and $LASTEXITCODE -eq 0) { $pyBin = $cand[0]; $pyArgs = $extra }
+}
+if (-not $pyBin) { $pyBin = 'python3' }
+$pyCmd = (@($pyBin) + $pyArgs) -join ' '
+
 $tools = @(
-  @('required',   'Node.js 18+ (scripts, hooks, gate)', 'node',       'node --version'),
+  @('required',   'Python 3.12+ (scripts and hooks)', $pyBin,        "$pyCmd --version"),
   @('required',   'git',                             'git',          'git --version'),
   @('required',   'curl (OSV.dev, KEV, EPSS, proxy)', 'curl.exe',    'curl.exe --version'),
   @('sast',       'Opengrep',                        'opengrep',     'opengrep --version'),
@@ -49,7 +65,13 @@ $rows = foreach ($t in $tools) {
   $ver = '-'
   if (Get-Command $bin -ErrorAction SilentlyContinue) {
     $global:LASTEXITCODE = 0
-    $out = try { (Invoke-Expression "$vcmd 2>&1" | Out-String) } catch { $null }
+    # $vcmd comes from the fixed table above ("program arg arg"); split it and call the program
+    # directly instead of passing a string to Invoke-Expression.
+    # Keep the arguments an array: splatting a bare string passes it one character at a time.
+    $parts = @($vcmd -split '\s+')
+    $exe = $parts[0]
+    $exeArgs = @($parts | Select-Object -Skip 1)
+    $out = try { (& $exe @exeArgs 2>&1 | Out-String) } catch { $null }
     if ($null -ne $out -and $LASTEXITCODE -eq 0) {
       $status = 'installed'
       $ver = if ($out -match '\d+\.\d+(\.\d+)?') { $Matches[0] } else { 'unknown' }
@@ -60,8 +82,6 @@ $rows = foreach ($t in $tools) {
 }
 $rows | Format-Table -AutoSize
 
-$major = 0
-if (Get-Command node -ErrorAction SilentlyContinue) { $major = [int](node -p "process.versions.node.split('.')[0]") }
-if ($major -lt 18) { Write-Output 'Node.js 18+ is missing: the audit runs without the checklist and gate, and is labeled non-deterministic.' }
+if (-not $pyOk) { Write-Output 'Python 3.12+ is missing: the audit runs without the checklist and gate, and is labeled non-deterministic.' }
 Write-Output 'Scanners are optional: used only if already installed (references/tools.md).'
 Write-Output 'This skill never installs tools.'

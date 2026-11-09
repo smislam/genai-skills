@@ -1,6 +1,6 @@
 # Secrets
 
-`inventory.js` finds secret candidates deterministically, using the `secret` rules in `rules/rules.json`:
+`inventory.py` finds secret candidates deterministically, using the `secret` rules in `rules/rules.json`:
 - **`secret` items** come from the working tree.
 - **`secret-history` items** come from every commit on every branch (Standard and Deep depth): lines added anywhere in history, recorded at the commit that introduced them.
 
@@ -8,7 +8,7 @@ Excerpts are already redacted, so `coverage.json` never contains a secret value.
 
 ## Deciding secret items
 
-Look at each item with `node ${CLAUDE_SKILL_DIR}/scripts/secret-context.js --root <repo> --id <item ID>`. It prints the surrounding lines, or the commit's change for history items, with every secret value redacted. **Don't use `git show` or open the file directly to look at a secret:** that prints the raw value into the conversation (rule 7). Then judge the value in context:
+Look at each item with `python3 -I ${CLAUDE_SKILL_DIR}/scripts/secret-context.py --root <repo> --id <item ID>`. It prints the surrounding lines, or the commit's change for history items, with every secret value redacted. **Don't use `git show` or open the file directly to look at a secret:** that prints the raw value into the conversation (rule 7). Then judge the value in context:
 
 | Looks like | Decision |
 |---|---|
@@ -29,7 +29,7 @@ Look at each item with `node ${CLAUDE_SKILL_DIR}/scripts/secret-context.js --roo
 
 For each secret, give the type, file, line, and commit (for history findings), and at most the first 4 characters. Never the value. The fix is `remediation.md`, "Leaked secrets": revoke and rotate first.
 
-## Manual procedure (non-deterministic mode, without Node.js)
+## Manual procedure (non-deterministic mode, without Python)
 
 The `secret` patterns in `rules/rules.json` are JavaScript regular expressions, which ripgrep (the Grep tool) also understands. `git log -G` uses a different dialect, so don't pass them to git.
 

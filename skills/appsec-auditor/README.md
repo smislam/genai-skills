@@ -51,12 +51,14 @@ The folder also contains `.claude-plugin/plugin.json`, so Claude Code loads it a
 | Requirement | Used for |
 |---|---|
 | Claude Code | Running the skill and its hooks |
-| **Node.js 18 or later** | The checklist scripts, the guardrail hooks, and the coverage gate (standard library only, with no npm packages) |
+| **Python 3.12 or newer** | The checklist scripts, the guardrail hooks, and the coverage gate (standard library only, with no packages to install) |
 | `git` | The file list, and secrets in git history |
 | `curl` | All network calls, including through corporate proxies. Ships with macOS, Linux, Git Bash, and Windows 10+ |
 | Network access to `api.osv.dev`, `www.cisa.gov`, `api.first.org`, and `repo1.maven.org`, directly, through a proxy, or through internal mirrors | Live vulnerability data. Without it, the report marks dependency results **not checked** instead of calling them clean |
 
-Without Node.js, the audit still runs by instruction alone, but nothing enforces the coverage, and the report is labeled **non-deterministic**.
+Without Python, the audit still runs by instruction alone, but nothing enforces the coverage, and the report is labeled **non-deterministic**.
+
+To confirm the scripts and hooks work on your machine, run `python3 -I scripts/selftest.py` (on Windows, `py -3 -I`). It builds a small throwaway repository, runs every script and all three hooks against it, uses no network, and prints PASS or FAIL for each of its 45 checks.
 
 **Optional, if already present:** security scanners you already have (Semgrep, Gitleaks, OSV-Scanner, Trivy, Checkov, and others). The skill runs them as an extra source of candidates and verifies their results like everything else. It never asks you to install one. See `references/tools.md`.
 
@@ -75,7 +77,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME\.claude\skills\appsec
 Every network call goes through `curl`, so standard proxy settings work. Test them:
 
 ```bash
-node ~/.claude/skills/appsec-auditor/scripts/net-check.js
+python3 -I ~/.claude/skills/appsec-auditor/scripts/net-check.py
 ```
 
 It tests each endpoint and names the problem when one fails. Set these in the environment Claude Code runs in, or in Claude Code's `env` settings:
@@ -95,15 +97,15 @@ These were tested against a forward proxy, both open and requiring authenticatio
 
 What gets examined doesn't depend on the AI:
 
-1. **`inventory.js`** builds the checklist, `coverage.json`:
+1. **`inventory.py`** builds the checklist, `coverage.json`:
    - every file;
    - every hit of the versioned rules in `rules/rules.json`: sinks, misconfigurations, entry points, and secrets, including git history;
    - every package from lockfiles and manifests.
 
    Each item gets a stable ID.
-2. **`deps.js`** checks every package against OSV.dev, CISA KEV, and EPSS, and adds one item per advisory.
+2. **`deps.py`** checks every package against OSV.dev, CISA KEV, and EPSS, and adds one item per advisory.
 3. **The AI decides every item** in `ledger.json`: a finding, a false positive with the reason, or needs review. It must open every entry-point file. A hook logs each file it reads.
-4. **The `Stop` hook** runs `coverage-check.js` and won't let the audit finish until every item is decided, every entry-point file was read, and the report carries the coverage summary. The summary's numbers come from the script, not the AI.
+4. **The `Stop` hook** runs `coverage-check.py` and won't let the audit finish until every item is decided, every entry-point file was read, and the report carries the coverage summary. The summary's numbers come from the script, not the AI.
 
 The same commit, rules version, and depth produce the same checklist every time. Two audits of the same commit can be compared decision by decision. The AI's *judgment* on an item can still differ between runs, but every judgment is recorded with its reason. Details: `references/coverage.md`.
 
@@ -119,8 +121,8 @@ The same commit, rules version, and depth produce the same checklist every time.
 
 ## How it checks dependencies without a scanner
 
-1. **Package list:** `inventory.js` parses your lockfiles and manifests (npm, Yarn, pnpm, Poetry, uv, Pipenv, pip, Maven, Gradle, Go, Cargo, NuGet, Bundler, Composer) into a list of every package and its exact version.
-2. **OSV.dev:** `deps.js` sends that list to [OSV.dev](https://osv.dev), the open vulnerability database behind many commercial scanners. It returns each matching advisory, with its CVE IDs, severity, and fixed versions.
+1. **Package list:** `inventory.py` parses your lockfiles and manifests (npm, Yarn, pnpm, Poetry, uv, Pipenv, pip, Maven, Gradle, Go, Cargo, NuGet, Bundler, Composer) into a list of every package and its exact version.
+2. **OSV.dev:** `deps.py` sends that list to [OSV.dev](https://osv.dev), the open vulnerability database behind many commercial scanners. It returns each matching advisory, with its CVE IDs, severity, and fixed versions.
 3. **KEV and EPSS:** it downloads the current CISA Known Exploited Vulnerabilities catalog, flags every CVE that's being actively exploited, and adds each CVE's EPSS exploit-probability score.
 4. **Reachability:** the AI checks whether your code actually uses the vulnerable part of each library.
 
@@ -128,13 +130,13 @@ The same commit, rules version, and depth produce the same checklist every time.
 
 ## Hooks
 
-The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (Node.js). All of them do nothing unless an audit is running: the skill creates `.appsec-audit/.active` when it starts, and removes it at the end. Markers older than 24 hours are ignored.
+The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (Python; on Windows set the hook command to `py` with `-3` first). All of them do nothing unless an audit is running: the skill creates `.appsec-audit/.active` when it starts, and removes it at the end. Markers older than 24 hours are ignored.
 
 | Hook | What it does |
 |---|---|
-| `PreToolUse` (`guard.js`) | **Asks you** before: commands that run project code, running scripts by path (except the skill's own), anything that sends data off the machine, edits outside `.appsec-audit/`, and `git push`. **Blocks:** piping downloaded scripts into a shell, unredacted secrets in the report, edits to the checklist files, and reporting findings outside the machine (issues, pull requests, advisories, comments, email) |
-| `PostToolUse` (`track.js`) | Logs each file the AI opens, as evidence for the coverage gate |
-| `Stop` (`gate.js`) | Sends the AI back to work until coverage is complete. If the audit needs to wait for you, the skill marks it paused, so the gate lets the turn end |
+| `PreToolUse` (`guard.py`) | **Asks you** before: commands that run project code, running scripts by path (except the skill's own), anything that sends data off the machine, edits outside `.appsec-audit/`, and `git push`. **Blocks:** piping downloaded scripts into a shell, unredacted secrets in the report, edits to the checklist files, and reporting findings outside the machine (issues, pull requests, advisories, comments, email) |
+| `PostToolUse` (`track.py`) | Logs each file the AI opens, as evidence for the coverage gate |
+| `Stop` (`gate.py`) | Sends the AI back to work until coverage is complete. If the audit needs to wait for you, the skill marks it paused, so the gate lets the turn end |
 
 The hooks work with both the Bash and PowerShell tools and handle Windows paths. Because they're loaded as a plugin, Claude Code starts them on every matching event in every session; without an audit marker they exit immediately. To turn them off: `claude plugin disable appsec-auditor@skills-dir`.
 
@@ -144,8 +146,8 @@ The hooks work with both the Bash and PowerShell tools and handle Windows paths.
 
 Each audit writes to `.appsec-audit/` at the repository root:
 - `report.md`: the human-readable report.
-- `findings.json` and `results.sarif`: the findings in structured form, and SARIF 2.1.0 rendered from them by `sarif.js` (deterministic: the same findings give the same file). GitHub code scanning and SARIF-aware IDEs can ingest it.
-- `coverage.json`, `deps.json`, `ledger.json`, `reads.jsonl`, `files.txt`: the checklist, the dependency data, the AI's decisions, and the read log. Keep them with the report; they're the evidence for its coverage numbers.
+- `findings.json` and `results.sarif`: the findings in structured form, and SARIF 2.1.0 rendered from them by `sarif.py` (deterministic: the same findings give the same file). GitHub code scanning and SARIF-aware IDEs can ingest it.
+- `coverage.json`, `deps.pyon`, `ledger.json`, `reads.jsonl`, `files.txt`: the checklist, the dependency data, the AI's decisions, and the read log. Keep them with the report; they're the evidence for its coverage numbers.
 - `data/kev.json`: the KEV catalog used.
 - `gitlab/`: GitLab security reports (`gl-sast-report.json`, `gl-secret-detection-report.json`, `gl-dependency-scanning-report.json`) when you ask for GitLab output. Publish them from a CI job as `artifacts: reports:`; the skill shows you the job snippet.
 - `raw/`: output of any already-installed scanner it ran.

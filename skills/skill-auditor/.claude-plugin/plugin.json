@@ -1,0 +1,9 @@
+{
+  "name": "skill-auditor",
+  "description": "Safety and quality audit for agent skills, with an optional install gate that stays inert unless SKILL_AUDITOR_GATE is set.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Shafiq Islam"
+  },
+  "license": "MIT"
+}

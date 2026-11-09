@@ -138,18 +138,23 @@ paths.stream().map(Files::readString).toList();   // readString throws IOExcepti
 Three honest options, in order of preference:
 
 ```java
-// 1. Handle it inside the lambda and return a value that models failure.
-paths.stream().map(p -> {
-    try { return Files.readString(p, UTF_8); }
-    catch (IOException e) { return null; }        // or a sealed Result — see below
-}).filter(Objects::nonNull).toList();
-
-// 2. Don't use a stream. A plain for-loop handles checked exceptions natively
+// 1. Don't use a stream. A plain for-loop handles checked exceptions natively
 //    and is the right answer more often than people admit.
 var contents = new ArrayList<String>();
 for (var p : paths) {
     contents.add(Files.readString(p, UTF_8));     // throws IOException — propagate it
 }
+
+// 2. Handle it inside the lambda and say what happens to the failure. Right only when skipping
+//    an unreadable file is the behavior you actually want, and then log it rather than hide it.
+//    (No null placeholders: an empty stream models "nothing to emit".)
+paths.stream().flatMap(p -> {
+    try { return Stream.of(Files.readString(p, UTF_8)); }
+    catch (IOException e) {
+        log.warn("Skipping unreadable file {}", p, e);
+        return Stream.empty();
+    }
+}).toList();
 
 // 3. A throwing-functional-interface adapter, when the pipeline is genuinely worth keeping.
 @FunctionalInterface
@@ -159,12 +164,12 @@ static <T, R> Function<T, R> unchecked(ThrowingFunction<T, R> f) {
     return t -> {
         try { return f.apply(t); }
         catch (RuntimeException e) { throw e; }
-        catch (Exception e) { throw new UncheckedIOException_or_DomainException(e); }
+        catch (Exception e) { throw new IllegalStateException("Failed in a stream stage", e); } // or your domain exception
     };
 }
 ```
 
-Option 2 is underrated. If making code functional requires an exception-laundering helper, the loop was clearer. Whatever you do, **never swallow the exception to make the stream compile** — that is how data loss becomes silent.
+Option 1 is underrated. If making code functional requires an exception-laundering helper, the loop was clearer. Whatever you do, **never swallow the exception to make the stream compile** — that is how data loss becomes silent.
 
 ## Higher-order functions
 
