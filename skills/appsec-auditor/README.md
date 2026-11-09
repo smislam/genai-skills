@@ -58,7 +58,7 @@ The folder also contains `.claude-plugin/plugin.json`, so Claude Code loads it a
 
 Without Python, the audit still runs by instruction alone, but nothing enforces the coverage, and the report is labeled **non-deterministic**.
 
-To confirm the scripts and hooks work on your machine, run `python3 -I scripts/selftest.py` (on Windows, `py -3 -I`). It builds a small throwaway repository, runs every script and all three hooks against it, uses no network, and prints PASS or FAIL for each of its 45 checks.
+To confirm the scripts and hooks work on your machine, run `python3 -I scripts/selftest.py` (or `python` or `py -3`, whichever runs Python 3.12 or newer). It builds a small throwaway repository, runs every script and all three hooks against it, uses no network, and prints PASS or FAIL for each of its 48 checks.
 
 **Optional, if already present:** security scanners you already have (Semgrep, Gitleaks, OSV-Scanner, Trivy, Checkov, and others). The skill runs them as an extra source of candidates and verifies their results like everything else. It never asks you to install one. See `references/tools.md`.
 
@@ -130,7 +130,7 @@ The same commit, rules version, and depth produce the same checklist every time.
 
 ## Hooks
 
-The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (Python; on Windows set the hook command to `py` with `-3` first). All of them do nothing unless an audit is running: the skill creates `.appsec-audit/.active` when it starts, and removes it at the end. Markers older than 24 hours are ignored.
+The folder loads as the plugin `appsec-auditor@skills-dir`, with three hooks (Python). Each starts through a small shell launcher that uses the first of `python3`, `python`, or `py -3` that is really Python 3.12 or newer, so there is nothing to configure per platform. The launcher needs a POSIX shell: `sh` on macOS and Linux, and Git Bash on Windows (Claude Code's default there). With no suitable Python, or on Windows without Git Bash, the hooks do nothing and the audit is labeled non-deterministic. On Windows the launcher costs about 55 ms per hook call (measured). All of them do nothing unless an audit is running: the skill creates `.appsec-audit/.active` when it starts, and removes it at the end. Markers older than 24 hours are ignored.
 
 | Hook | What it does |
 |---|---|

@@ -122,7 +122,7 @@ Upload the SARIF file with your code-scanning tool. The exit code fails the job.
 
 To use it, install `skill-auditor` as a plugin so `hooks/hooks.json` is picked up, then set the variable in your environment. It reads files only. A hook that fails lets the work continue.
 
-`hooks/hooks.json` launches the hook with `python3`. That is right on macOS and Linux. On Windows, change `"command": "python3"` to `"command": "py"` and add `"-3"` as the first entry of `args`. If the launcher is missing, the hook fails open: nothing is blocked and nothing is reported, so check that it runs by editing a skill file with `SKILL_AUDITOR_GATE=advise` set.
+`hooks/hooks.json` starts the hook through a small shell launcher, so there is nothing to configure per platform. The launcher tries `python3`, then `python`, then `py -3`, and runs the hook with the first one that really is Python 3.12 or newer (this also skips the Windows Store placeholder for `python3`). It needs a POSIX shell: `sh` on macOS and Linux, and Git Bash on Windows, which Claude Code uses there by default. Without Git Bash, Claude Code falls back to PowerShell, the launcher cannot run, and the hook does nothing. If no suitable Python is found the hook also does nothing: it fails open, so nothing is blocked and nothing is reported. Check that it runs by editing a skill file with `SKILL_AUDITOR_GATE=advise` set. On Windows the launcher costs about 55 ms per hook call, measured.
 
 ## Verifying the tool itself
 

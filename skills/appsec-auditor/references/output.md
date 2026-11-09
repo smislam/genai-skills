@@ -144,7 +144,7 @@ State plainly that this is an AI-led review: thorough where it looked, but not e
 - **Optional:** `cwe`, `owasp`, `cvss` (the estimated vector), `cvssScore`, `message` (one sentence), `path` (source-to-sink steps), `fix` (Markdown), and `chain` (member finding IDs, for chains).
 - **Redact secrets** in every field (rule 7).
 
-Then run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py --root <repo>`. Never edit `results.sarif` by hand; change `findings.json` and re-run.
+Then run `python3 -I ${CLAUDE_SKILL_DIR}/scripts/sarif.py --root <repo>`. Never edit `results.sarif` by hand; change `findings.json` and re-run. `sarif.py` refuses a `findings.json` with a missing or misspelled required field (for example `"severity": "Hgih"`), lists each problem by finding ID, and leaves the earlier `results.sarif` untouched; the coverage gate applies the same rules.
 
 **What `sarif.py` produces:**
 - one run, with the tool name `appsec-auditor` and the commit;

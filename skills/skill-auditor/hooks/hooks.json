@@ -1,5 +1,5 @@
 {
-  "description": "skill-auditor install gate. Inert unless the environment variable SKILL_AUDITOR_GATE is set to advise or strict. On Windows use command py with -3 as the first argument.",
+  "description": "skill-auditor install gate. Inert unless the environment variable SKILL_AUDITOR_GATE is set to advise or strict. Runs through a small POSIX shell launcher that picks the first of python3, python, or py -3 that is Python 3.12 or newer, and does nothing if there is none.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,8 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/install-gate.py"],
+            "command": "for p in python3 python \"py -3\"; do if $p -I -S -c \"import sys; sys.exit(sys.version_info < (3, 12))\" >/dev/null 2>&1; then exec $p -I \"${CLAUDE_PLUGIN_ROOT}/hooks/install-gate.py\"; fi; done; exit 0",
             "timeout": 10
           }
         ]
@@ -20,8 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/install-gate.py"],
+            "command": "for p in python3 python \"py -3\"; do if $p -I -S -c \"import sys; sys.exit(sys.version_info < (3, 12))\" >/dev/null 2>&1; then exec $p -I \"${CLAUDE_PLUGIN_ROOT}/hooks/install-gate.py\"; fi; done; exit 0",
             "timeout": 30
           }
         ]

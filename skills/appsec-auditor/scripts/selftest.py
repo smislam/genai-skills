@@ -188,6 +188,23 @@ def check_scripts(chk: Checker, root: Path) -> None:
     run_script('sarif.py', ['--root', root])
     chk.check('sarif output is deterministic (same bytes twice)', sarif_path.read_bytes() == first)
 
+    broken = {'findings': [
+        {'id': 'F-02', 'title': 'Severity typo', 'severity': 'Hgih', 'confidence': 'Confirmed',
+         'locations': [{'file': 'app/main.py', 'line': 1}]},
+        {'id': 'F-03', 'severity': 'High', 'confidence': 'Maybe', 'locations': []},
+        {'id': 'finding four', 'title': 'Bad id', 'severity': 'Low', 'confidence': 'Likely',
+         'locations': [{'file': 'app/main.py', 'line': 0}]},
+    ]}
+    (root / '.appsec-audit' / 'findings.json').write_text(json.dumps(broken), encoding='utf-8')
+    rc, out = run_script('sarif.py', ['--root', root])
+    chk.check('sarif refuses invalid findings and names each one', rc == 1 and all(
+        s in out for s in ('F-02', "'Hgih'", 'F-03', 'missing "title"', "'Maybe'", 'finding four', 'must look like F-1',
+        'at least one location')), out)
+    chk.check('a failed sarif run leaves the earlier results.sarif untouched', sarif_path.read_bytes() == first)
+    rc, out = run_script('coverage-check.py', ['--root', root])
+    chk.check('the coverage gate flags the same invalid findings', 'lack id, title, severity' in out, out)
+    (root / '.appsec-audit' / 'findings.json').write_text(json.dumps(findings), encoding='utf-8')
+
 
 def check_hooks(chk: Checker, root: Path) -> None:
     """Guard, track and gate: inert without a marker, correct decisions with one."""
@@ -250,6 +267,59 @@ def check_hooks(chk: Checker, root: Path) -> None:
     (evil / 'json.py').write_text(f"open(r'{evil / 'pwned.txt'}', 'w').write('x')\n", encoding='utf-8')
     run_hook('guard', bash('ls'), root, cwd=evil)
     chk.check('a hostile json.py in the working folder is never imported', not (evil / 'pwned.txt').exists())
+    check_launcher(chk, root)
+
+
+def hook_commands() -> dict[str, str]:
+    """Hook name -> the launch command in hooks/hooks.json."""
+    doc = json.loads((HOOKS / 'hooks.json').read_text(encoding='utf-8'))
+    found: dict[str, str] = {}
+    for groups in doc['hooks'].values():
+        for group in groups:
+            for hook in group['hooks']:
+                for name in ('guard', 'track', 'gate'):
+                    if f'hooks/{name}.py' in hook['command']:
+                        found[name] = hook['command']
+    return found
+
+
+def run_launcher(command: str, event: dict[str, Any], root: Path, path: str | None = None) -> tuple[int, str]:
+    """Run a hooks.json command the way a host does: through ``sh -c`` with the event on stdin."""
+    env = {**os.environ, 'CLAUDE_PROJECT_DIR': str(root), 'CLAUDE_PLUGIN_ROOT': str(SKILL)}
+    if path is not None:
+        env['PATH'] = path
+    payload = json.dumps({'cwd': str(root), 'session_id': 's1', **event})
+    r = subprocess.run([shutil.which('sh') or 'sh', '-c', command], input=payload, capture_output=True, text=True,
+                       encoding='utf-8', errors='replace', env=env, timeout=TIMEOUT, check=False)
+    return r.returncode, r.stdout
+
+
+def check_launcher(chk: Checker, root: Path) -> None:
+    """hooks.json must start each hook through the launcher, and the launcher must behave like the hook."""
+    commands = hook_commands()
+    chk.check('hooks.json launches all three hooks through the launcher',
+              sorted(commands) == ['gate', 'guard', 'track'] and all(c.startswith('for p in python3') for c in commands.values()),
+              commands)
+    if shutil.which('sh') is None:
+        print('SKIP  launcher checks (no sh on this machine)')
+        return
+    audit = root / '.appsec-audit'
+    (audit / '.active').write_text('', encoding='utf-8')
+    events = {
+        'guard': {'hook_event_name': 'PreToolUse', 'tool_name': 'Bash', 'tool_input': {'command': 'npm install'}},
+        'gate': {'hook_event_name': 'Stop', 'stop_hook_active': False},
+        'track': {'hook_event_name': 'PostToolUse', 'tool_name': 'Read',
+                  'tool_input': {'file_path': str(root / 'app' / 'server.js')}},
+    }
+    for name, event in events.items():
+        direct = run_hook(name, event, root)
+        via = run_launcher(commands[name], event, root)
+        chk.check(f'the {name} hook behaves the same through the launcher as run directly',
+                  via == (direct[0], direct[1]), (via, direct[:2]))
+    empty = root.parent / 'empty-path'
+    empty.mkdir(exist_ok=True)
+    rc, out = run_launcher(commands['guard'], events['guard'], root, path=str(empty))
+    chk.check('with no Python available the launcher exits 0 quietly (hooks fail open)', rc == 0 and not out.strip(), (rc, out))
 
 
 def _iso_now() -> str:

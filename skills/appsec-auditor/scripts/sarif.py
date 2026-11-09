@@ -34,6 +34,8 @@ __all__ = ['main', 'render']
 SEVERITY_SCORE = {'Critical': '9.5', 'High': '8.0', 'Medium': '5.5', 'Low': '2.0', 'Info': '0.5'}
 LEVEL = {'Critical': 'error', 'High': 'error', 'Medium': 'warning', 'Low': 'note', 'Info': 'note'}
 PRECISION = {'Confirmed': 'high', 'Likely': 'medium'}
+FINDING_ID = re.compile(r'(F|C)-\d+', re.ASCII)  # same rule as the coverage gate
+MAX_PROBLEMS_SHOWN = 10
 NON_SLUG = re.compile(r'[^a-z0-9]+')
 EDGE_DASH = re.compile(r'^-|-\Z')
 LINE_SPLIT = re.compile(r'\r?\n')
@@ -50,6 +52,55 @@ def text_of(value: Any) -> str:
 def slug(value: Any) -> str:
     """Lower-case text reduced to dash-separated [a-z0-9] words, at most 60 characters."""
     return EDGE_DASH.sub('', NON_SLUG.sub('-', str(value).lower()))[:60]
+
+
+def location_problems(locations: Any) -> list[str]:
+    """What is wrong with a finding's ``locations`` list (empty when it is usable)."""
+    if not isinstance(locations, list) or not locations:
+        return ['needs at least one location']
+    problems = []
+    for index, loc in enumerate(locations, 1):
+        if not isinstance(loc, dict) or not isinstance(loc.get('file'), str) or not loc['file']:
+            problems.append(f'location {index} needs a repository-relative "file"')
+        elif 'line' in loc and (not isinstance(loc['line'], int) or isinstance(loc['line'], bool) or loc['line'] < 1):
+            problems.append(f'location {index} "line" must be a whole number of 1 or more')
+    return problems
+
+
+def finding_problems(finding: Any) -> list[str]:
+    """What is wrong with one findings.json entry (empty when it is valid).
+
+    The same fields the coverage gate requires, so a finding that renders here also passes there.
+    """
+    if not isinstance(finding, dict):
+        return ['is not an object']
+    problems = []
+    if not isinstance(finding.get('id'), str) or not FINDING_ID.fullmatch(finding['id']):
+        problems.append('"id" must look like F-1 (or C-1 for a chain)')
+    if not isinstance(finding.get('title'), str) or not finding['title'].strip():
+        problems.append('missing "title"')
+    if finding.get('severity') not in SEVERITY_SCORE:
+        problems.append(f'"severity" {finding.get("severity")!r} is not one of {", ".join(SEVERITY_SCORE)}')
+    if finding.get('confidence') not in PRECISION:
+        problems.append(f'"confidence" {finding.get("confidence")!r} is not one of {", ".join(PRECISION)}')
+    return problems + location_problems(finding.get('locations'))
+
+
+def check_findings(findings: Any) -> list[dict[str, Any]]:
+    """Return the findings list, or raise ValueError naming every invalid entry and why."""
+    if findings is None:
+        return []
+    if not isinstance(findings, list):
+        raise ValueError('findings.json: "findings" must be a list')
+    lines = []
+    for index, finding in enumerate(findings, 1):
+        label = finding.get('id') if isinstance(finding, dict) and isinstance(finding.get('id'), str) else f'entry {index}'
+        lines += [f'{label}: {problem}' for problem in finding_problems(finding)]
+    if lines:
+        shown = lines[:MAX_PROBLEMS_SHOWN]
+        more = f'\n  ... and {len(lines) - len(shown)} more' if len(lines) > len(shown) else ''
+        raise ValueError(f'findings.json has {len(lines)} problem(s); fix them and re-run:\n  ' + '\n  '.join(shown) + more)
+    return findings
 
 
 def line_hash(root: str, loc: dict[str, Any]) -> str:
@@ -143,8 +194,8 @@ def render(root: str) -> dict[str, Any]:
     coverage = read_json(audit_dir / 'coverage.json')
     coverage = coverage if isinstance(coverage, dict) else {}
 
-    findings = document.get('findings') if isinstance(document, dict) else None
-    kept = [f for f in findings or [] if f.get('severity') != 'Info' or f.get('sarif') is not False]
+    findings = check_findings(document.get('findings') if isinstance(document, dict) else None)
+    kept = [f for f in findings if f.get('severity') != 'Info' or f.get('sarif') is not False]
     rules: list[dict[str, Any]] = []
     rule_index: dict[str, int] = {}
     results = []

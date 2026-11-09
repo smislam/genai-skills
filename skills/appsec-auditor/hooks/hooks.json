@@ -1,5 +1,5 @@
 {
-  "description": "appsec-auditor guardrails, read tracking, and coverage gate. All inert unless <repo>/.appsec-audit/.active exists. Runs Python 3.12 or newer; on Windows the command is `py` with `-3` as the first argument.",
+  "description": "appsec-auditor guardrails, read tracking, and coverage gate. All inert unless <repo>/.appsec-audit/.active exists. Each hook runs through a small POSIX shell launcher that picks the first of python3, python, or py -3 that is Python 3.12 or newer, and does nothing if there is none.",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,8 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/guard.py"],
+            "command": "for p in python3 python \"py -3\"; do if $p -I -S -c \"import sys; sys.exit(sys.version_info < (3, 12))\" >/dev/null 2>&1; then exec $p -I \"${CLAUDE_PLUGIN_ROOT}/hooks/guard.py\"; fi; done; exit 0",
             "timeout": 10
           }
         ]
@@ -20,8 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/track.py"],
+            "command": "for p in python3 python \"py -3\"; do if $p -I -S -c \"import sys; sys.exit(sys.version_info < (3, 12))\" >/dev/null 2>&1; then exec $p -I \"${CLAUDE_PLUGIN_ROOT}/hooks/track.py\"; fi; done; exit 0",
             "timeout": 10
           }
         ]
@@ -32,8 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["-I", "${CLAUDE_PLUGIN_ROOT}/hooks/gate.py"],
+            "command": "for p in python3 python \"py -3\"; do if $p -I -S -c \"import sys; sys.exit(sys.version_info < (3, 12))\" >/dev/null 2>&1; then exec $p -I \"${CLAUDE_PLUGIN_ROOT}/hooks/gate.py\"; fi; done; exit 0",
             "timeout": 60
           }
         ]

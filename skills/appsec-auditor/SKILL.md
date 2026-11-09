@@ -182,7 +182,7 @@ For each finding, give a minimal, idiomatic fix as a diff that matches the codeb
 
 ## Hooks
 
-This skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`, loaded as `appsec-auditor@skills-dir`). Its hooks need Python 3.12 or newer (they run `python3 -I`; on Windows change the hook command to `py` with `-3` as the first argument), and all of them do nothing unless `.appsec-audit/.active` exists.
+This skill folder is also a Claude Code plugin (`.claude-plugin/plugin.json`, loaded as `appsec-auditor@skills-dir`). Its hooks need Python 3.12 or newer and a POSIX shell (`sh`, or Git Bash on Windows). They start through a launcher that picks `python3`, `python`, or `py -3`, so nothing needs configuring per platform. All of them do nothing unless `.appsec-audit/.active` exists.
 
 | Hook | Action | Decision | Rule |
 |---|---|---|---|
